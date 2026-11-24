@@ -821,6 +821,9 @@
         state = Object.assign(defaultState(), parsed);
         state.receipt = Object.assign(defaultState().receipt, parsed.receipt || {});
         state.cloud = Object.assign(defaultState().cloud, parsed.cloud || {});
+        if (!Array.isArray(state.users) || state.users.length === 0) {
+          state.users = defaultState().users;
+        }
       }
     } catch (e) {
       state = defaultState();
@@ -1056,7 +1059,7 @@
           return !q || s.nombre.toLowerCase().indexOf(q) !== -1 || (s.descripcion || '').toLowerCase().indexOf(q) !== -1;
         }).forEach(function (s) {
           var thumb = s.imagen
-            ? '<img src="' + s.imagen + '" class="pos-thumb" onerror="this.style.display='none'"/>'
+            ? '<img src="' + s.imagen + '" class="pos-thumb" />'
             : '<div class="pos-thumb-svg">' + placeholderIconSVG('servicio') + '</div>';
           cardsHtml += '<button type="button" data-action="cart-add" data-tipo="servicio" data-id="' + s.id + '" class="pos-card">' +
             '<div>' + thumb +
@@ -1077,7 +1080,7 @@
           var out = p.stock <= 0;
           var stBadge = out ? 'b-red' : (p.stock <= 5 ? 'b-amber' : 'b-green');
           var thumb = p.imagen
-            ? '<img src="' + p.imagen + '" class="pos-thumb" onerror="this.style.display='none'"/>'
+            ? '<img src="' + p.imagen + '" class="pos-thumb" />'
             : '<div class="pos-thumb-svg">' + placeholderIconSVG('producto') + '</div>';
           cardsHtml += '<button type="button" data-action="cart-add" data-tipo="producto" data-id="' + p.id + '" class="pos-card" ' + (out ? 'disabled' : '') + '>' +
             '<div>' + thumb +
@@ -2071,6 +2074,9 @@
           state = Object.assign(defaultState(), remoteState);
           state.receipt = Object.assign(defaultState().receipt, remoteState.receipt || {});
           state.cloud = Object.assign(defaultState().cloud, remoteState.cloud || {});
+          if (!Array.isArray(state.users) || state.users.length === 0) {
+            state.users = defaultState().users;
+          }
           lastCloudUpdatedAt = data.updatedAt || '';
           safeSet(STORAGE_KEY, JSON.stringify(state));
           if (currentUser) {
@@ -2317,11 +2323,9 @@
         var rows = state.sales.filter(function (s) {
           return (!repFrom || s.fecha >= repFrom) && (!repTo || s.fecha <= repTo) && (repPay === 'Todos' || s.metodoPago === repPay);
         });
-        var csv = 'Ticket,Fecha,Hora,Cliente,Barbero,Pago,Total
-' + rows.map(function (s) {
+        var csv = 'Ticket,Fecha,Hora,Cliente,Barbero,Pago,Total\n' + rows.map(function (s) {
           return [s.id, s.fecha, s.hora, '"' + s.clienteNombre + '"', '"' + s.barberoNombre + '"', s.metodoPago, s.total].join(',');
-        }).join('
-');
+        }).join('\n');
         var a = document.createElement('a');
         a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
         a.download = 'Reportes_GoldLabel_' + repFrom + '_' + repTo + '.csv';
