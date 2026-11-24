@@ -5,11 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>GOLD LABEL BARBER (EST. 1963) — Sistema Integral POS &amp; Gestión</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Ccircle cx='100' cy='100' r='96' fill='%2308090c' stroke='%23d4af37' stroke-width='6'/%3E%3Ccircle cx='100' cy='100' r='84' fill='none' stroke='%23d4af37' stroke-width='2.5'/%3E%3Cpath d='M75 55 L125 135 M125 55 L75 135' stroke='%23f3d066' stroke-width='8' stroke-linecap='round'/%3E%3Crect x='88' y='105' width='24' height='55' rx='6' fill='%23ffffff' stroke='%23d4af37' stroke-width='3'/%3E%3Cpath d='M88 120 L112 110 M88 135 L112 125 M88 150 L112 140' stroke='%23B91C1C' stroke-width='6'/%3E%3C/svg%3E" />
-  
-  <!-- Firebase SDKs Compat (Cargados al inicio para garantizar disponibilidad) -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
-
   <style>
     :root {
       --bg: #08090c;
@@ -530,6 +525,10 @@
   <div id="print-area"></div>
   <div id="toast-box"></div>
 
+  <!-- Firebase SDKs Compat -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
   <script>
     // =========================================================================
     // 1. SAFE PERSISTENCE & CONSTANTS
@@ -711,72 +710,9 @@
       state = defaultState();
     }
 
-    // =========================================================================
-    // FIREWALL & CLOUD SYNC ENGINE (AUTO SYNC BIDIRECCIONAL)
-    // =========================================================================
-    const DEFAULT_FB = {
-        apiKey: "AIzaSyAeo_2AhYfLRzUtvqeDMqk6-CAY4e2RS18",
-        authDomain: "gold-label-barber-a5d89.firebaseapp.com",
-        projectId: "gold-label-barber-a5d89",
-        storageBucket: "gold-label-barber-a5d89.firebasestorage.app",
-        messagingSenderId: "752587298181",
-        appId: "1:752587298181:web:be11c8f2dbc56e5015a0ec"
-    };
-
-    let db = null;
-    let isSyncingFromCloud = false;
-
-    try {
-        if (!firebase.apps.length) {
-            firebase.initializeApp(DEFAULT_FB);
-        }
-        db = firebase.firestore();
-        console.log("Firebase conectado automáticamente en segundo plano.");
-
-        // Escuchar cambios en tiempo real desde la nube (PC <-> Celular)
-        db.collection("gold_label_barber").doc("main_data").onSnapshot((doc) => {
-            if (doc.exists && !isSyncingFromCloud) {
-                var cloudData = doc.data();
-                if (cloudData && cloudData.payloadJson) {
-                    try {
-                        var parsedCloud = JSON.parse(cloudData.payloadJson);
-                        isSyncingFromCloud = true;
-                        state = Object.assign(defaultState(), parsedCloud);
-                        safeSet(STORAGE_KEY, JSON.stringify(state));
-                        if (currentUser) {
-                            renderActiveModule();
-                        }
-                        console.log("Datos sincronizados automáticamente desde la nube.");
-                    } catch (err) {
-                        console.error("Error al parsear datos de la nube:", err);
-                    } finally {
-                        isSyncingFromCloud = false;
-                    }
-                }
-            }
-        }, (err) => {
-            console.error("Error en escucha automática de Firestore:", err);
-        });
-
-    } catch (e) {
-        console.error("Error al inicializar Firebase:", e);
-    }
-
     function saveState() {
       safeSet(STORAGE_KEY, JSON.stringify(state));
       updateCloudPill();
-
-      // Enviar cambios automáticamente a Firestore para que el otro dispositivo los reciba
-      if (db && !isSyncingFromCloud) {
-          db.collection("gold_label_barber").doc("main_data").set({
-              updatedAt: new Date().toISOString(),
-              payloadJson: JSON.stringify(state)
-          }).then(() => {
-              console.log("Cambios subidos a la nube con éxito.");
-          }).catch((err) => {
-              console.error("Error al subir cambios a Firestore:", err);
-          });
-      }
     }
 
     // =========================================================================
@@ -1002,4 +938,123 @@
         }).forEach(function (p) {
           var catObj = state.productCategories.find(function (c) { return c.id === p.categoryId; });
           var out = p.stock <= 0;
-          var stBadge = out ? 'b-red' : (p.stock <= 5 ? 'b-amber' :
+          var stBadge = out ? 'b-red' : (p.stock <= 5 ? 'b-amber' : 'b-green');
+          var thumb = p.imagen
+            ? '<img src="' + p.imagen + '" class="pos-thumb" onerror="this.style.display=\'none\'"/>'
+            : '<div class="pos-thumb-svg">' + placeholderIconSVG('producto') + '</div>';
+          cardsHtml += '<button type="button" data-action="cart-add" data-tipo="producto" data-id="' + p.id + '" class="pos-card" ' + (out ? 'disabled' : '') + '>' +
+            '<div>' + thumb +
+            '<div class="flex justify-between items-center mt-2 mb-1 gap-1"><span class="badge b-dim truncate">' + esc(catObj ? catObj.nombre : 'Producto') + '</span><span class="badge ' + stBadge + '">' + (out ? 'Agotado' : 'Stock: ' + p.stock) + '</span></div>' +
+            '<div class="text-sm font-bold">' + esc(p.nombre) + '</div></div>' +
+            '<div class="flex justify-between items-center pt-2" style="border-top:1px solid var(--border);"><b class="text-gold">' + rd(p.precio) + '</b><span class="badge ' + (out ? 'b-red' : 'b-gold') + '">' + (out ? 'Sin Stock' : '+ Agregar') + '</span></div>' +
+          '</button>';
+        });
+      }
+
+      var total = posCart.reduce(function (sum, it) { return sum + (it.precio * it.cantidad); }, 0);
+      var cashVal = parseFloat(posCashReceived) || 0;
+      var changeVal = cashVal - total;
+
+      var activeBarbers = state.barbers.filter(function (b) { return b.activo !== false; });
+      if (!posBarberId && activeBarbers[0]) posBarberId = activeBarbers[0].id;
+
+      root.innerHTML = '<div class="grid grid-pos">' +
+        '<div class="flex flex-col gap-3">' +
+          '<div class="card">' +
+            '<div class="flex justify-between items-center gap-2 flex-wrap">' +
+              '<div class="flex gap-1">' +
+                '<button type="button" data-action="pos-tab" data-tab="todos" class="btn btn-sm ' + (posTab === 'todos' ? 'btn-gold' : 'btn-dark') + '">Todos</button>' +
+                '<button type="button" data-action="pos-tab" data-tab="servicios" class="btn btn-sm ' + (posTab === 'servicios' ? 'btn-gold' : 'btn-dark') + '">Servicios</button>' +
+                '<button type="button" data-action="pos-tab" data-tab="productos" class="btn btn-sm ' + (posTab === 'productos' ? 'btn-gold' : 'btn-dark') + '">Productos</button>' +
+              '</div>' +
+              '<input type="search" id="pos-search-inp" value="' + esc(posSearch) + '" placeholder="Buscar corte, barba o producto..." style="max-width:250px;" />' +
+            '</div>' +
+            catBar +
+          '</div>' +
+          '<div class="grid grid-catalog">' + (cardsHtml || '<div class="card text-center text-muted" style="grid-column:1/-1;">No hay artículos que coincidan con el filtro.</div>') + '</div>' +
+        '</div>' +
+
+        '<div class="card-gold flex flex-col justify-between gap-3">' +
+          '<div>' +
+            '<div class="flex justify-between items-center mb-3">' +
+              '<h3 class="serif text-base font-extrabold text-gold">Orden Actual</h3>' +
+              '<button type="button" data-action="cart-clear" class="btn btn-red btn-xs">Vaciar</button>' +
+            '</div>' +
+            '<div class="flex flex-col gap-2 mb-3">' +
+              '<div><label class="lbl">Barbero que atiende *</label>' +
+                '<select id="pos-barber">' + activeBarbers.map(function (b) {
+                  return '<option value="' + b.id + '" ' + (b.id === posBarberId ? 'selected' : '') + '>' + esc(b.nombre) + '</option>';
+                }).join('') + '</select>' +
+              '</div>' +
+              '<div class="grid grid-2 gap-2">' +
+                '<div><label class="lbl">Cliente Registrado</label>' +
+                  '<select id="pos-client-sel"><option value="">Cliente de paso</option>' + state.clients.map(function (c) {
+                    return '<option value="' + esc(c.nombre) + '" ' + (c.nombre === posClientSel ? 'selected' : '') + '>' + esc(c.nombre) + '</option>';
+                  }).join('') + '</select>' +
+                '</div>' +
+                '<div><label class="lbl">O Nombre Manual</label>' +
+                  '<input type="text" id="pos-client-txt" value="' + esc(posClientWalkin) + '" placeholder="Ej. Juan Pérez" />' +
+                '</div>' +
+              '</div>' +
+              '<div><label class="lbl">Método de Pago</label>' +
+                '<div class="grid grid-3 gap-1">' +
+                  ['Efectivo', 'Tarjeta', 'Transferencia'].map(function (m) {
+                    return '<button type="button" data-action="pos-pay" data-pay="' + m + '" class="btn btn-xs ' + (posPayMethod === m ? 'btn-gold' : 'btn-dark') + '">' + m + '</button>';
+                  }).join('') +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+
+            '<div class="flex flex-col gap-2" style="max-height:240px;overflow-y:auto;">' +
+              (posCart.length === 0 ? '<div class="subcard text-center text-xs text-muted p-4">Selecciona servicios o productos del catálogo para facturar.</div>' :
+              posCart.map(function (it, idx) {
+                return '<div class="subcard flex justify-between items-center gap-2">' +
+                  '<div class="min-w-0 flex-1"><div class="text-xs font-bold truncate">' + esc(it.nombre) + '</div><div class="text-xs text-gold">' + rd(it.precio) + ' c/u</div></div>' +
+                  '<div class="flex items-center gap-1 shrink-0">' +
+                    '<button type="button" data-action="cart-qty" data-idx="' + idx + '" data-delta="-1" class="btn btn-dark btn-xs">-</button>' +
+                    '<span class="text-xs font-bold" style="min-width:20px;text-align:center;">' + it.cantidad + '</span>' +
+                    '<button type="button" data-action="cart-qty" data-idx="' + idx + '" data-delta="1" class="btn btn-dark btn-xs">+</button>' +
+                    '<button type="button" data-action="cart-del" data-idx="' + idx + '" class="btn btn-red btn-xs">X</button>' +
+                  '</div>' +
+                '</div>';
+              }).join('')) +
+            '</div>' +
+          '</div>' +
+
+          '<div class="pt-3" style="border-top:1px solid var(--border);">' +
+            (posPayMethod === 'Efectivo' ? '<div class="grid grid-2 gap-2 mb-2">' +
+              '<div><label class="lbl">Efectivo Recibido RD$</label><input type="number" step="0.01" id="pos-cash-inp" value="' + esc(posCashReceived) + '" placeholder="0.00" /></div>' +
+              '<div class="subcard flex flex-col justify-center"><span class="text-xs text-muted">Devuelta / Cambio</span><b id="pos-change-lbl" class="text-sm ' + (changeVal >= 0 ? 'text-green' : 'text-amber') + '">' + (cashVal > 0 ? rd(Math.max(0, changeVal)) : 'RD$ 0.00') + '</b></div>' +
+            '</div>' : '') +
+            '<div class="flex justify-between items-center mb-3"><span class="text-sm font-bold text-muted">TOTAL A COBRAR</span><span class="text-xl font-extrabold text-gold-hi">' + rd(total) + '</span></div>' +
+            '<button type="button" data-action="pos-checkout" class="btn btn-gold w-full" style="padding:12px;">Cobrar e Imprimir Ticket (80mm)</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }
+
+    // =========================================================================
+    // 5. MODULE 2: DASHBOARD
+    // =========================================================================
+    function renderDashboard(root) {
+      var daySales = state.sales.filter(function (s) { return s.fecha === dashDate; });
+      var dayAdv = state.advances.filter(function (a) { return a.fecha === dashDate; });
+
+      var totalVendido = 0;
+      var ingServicios = 0;
+      var ingProductos = 0;
+      var byBarber = {};
+
+      daySales.forEach(function (s) {
+        totalVendido += Number(s.total) || 0;
+        byBarber[s.barberoNombre] = (byBarber[s.barberoNombre] || 0) + (Number(s.total) || 0);
+        (s.items || []).forEach(function (it) {
+          var sub = (Number(it.precio) || 0) * (Number(it.cantidad) || 0);
+          if (it.tipo === 'producto') ingProductos += sub;
+          else ingServicios += sub;
+        });
+      });
+
+      var totalAdelantos = dayAdv.reduce(function (sum, a) { return sum + (Number(a.monto) || 0); }, 0);
+      var efectivoNeto = totalVendido - totalAdelantos;
+      var pctServ = totalVendido > 0 ? Math.round((ingServicios / total
