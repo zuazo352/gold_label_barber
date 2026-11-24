@@ -395,6 +395,47 @@
     }
 
     /* =====================================================================
+       3B. POS CATALOG SCROLL & FIXED/STICKY CHECKOUT PANEL
+       ===================================================================== */
+    .pos-catalog-scroll {
+      max-height: calc(100vh - 185px);
+      overflow-y: auto;
+      padding-right: 6px;
+      align-content: start;
+    }
+    .pos-catalog-scroll::-webkit-scrollbar {
+      width: 8px;
+    }
+    .pos-catalog-scroll::-webkit-scrollbar-track {
+      background: #0b0d12;
+      border-radius: 999px;
+    }
+    .pos-catalog-scroll::-webkit-scrollbar-thumb {
+      background: rgba(212, 175, 55, 0.55);
+      border-radius: 999px;
+      border: 1px solid #0b0d12;
+    }
+    .pos-catalog-scroll::-webkit-scrollbar-thumb:hover {
+      background: var(--gold-hi);
+    }
+    .pos-checkout-sticky {
+      position: sticky;
+      top: 14px;
+      align-self: start;
+      max-height: calc(100vh - 92px);
+      overflow-y: auto;
+    }
+    @media (max-width: 1120px) {
+      .pos-catalog-scroll {
+        max-height: 540px;
+      }
+      .pos-checkout-sticky {
+        position: static;
+        max-height: none;
+      }
+    }
+
+    /* =====================================================================
        4. FLOATING CIRCULAR TOUCH KEYPAD (GOLD STYLE)
        ===================================================================== */
     #virtual-num-pad {
@@ -904,6 +945,7 @@
 
     var posTab = 'todos';
     var posCategory = 'todas';
+    var posPage = 1;
     var posSearch = '';
     var posCart = [];
     var posBarberId = state.barbers[0] ? state.barbers[0].id : '';
@@ -1096,7 +1138,7 @@
         '</div>';
       }
 
-      var cardsHtml = '';
+      var cardList = [];
       if (posTab === 'todos' || posTab === 'servicios') {
         state.services.filter(function (s) {
           return !q || s.nombre.toLowerCase().indexOf(q) !== -1 || (s.descripcion || '').toLowerCase().indexOf(q) !== -1;
@@ -1104,12 +1146,12 @@
           var thumb = s.imagen
             ? '<img src="' + s.imagen + '" class="pos-thumb" onerror="this.style.display=\'none\'"/>'
             : '<div class="pos-thumb-svg">' + placeholderIconSVG('servicio') + '</div>';
-          cardsHtml += '<button type="button" data-action="cart-add" data-tipo="servicio" data-id="' + s.id + '" class="pos-card">' +
+          cardList.push('<button type="button" data-action="cart-add" data-tipo="servicio" data-id="' + s.id + '" class="pos-card">' +
             '<div>' + thumb +
             '<div class="flex justify-between items-center mt-2 mb-1"><span class="badge b-gold">Servicio</span><span class="text-xs text-dim">' + s.duracion + ' min</span></div>' +
             '<div class="text-sm font-bold">' + esc(s.nombre) + '</div></div>' +
             '<div class="flex justify-between items-center pt-2" style="border-top:1px solid var(--border);"><b class="text-gold">' + rd(s.precio) + '</b><span class="badge b-gold">+ Agregar</span></div>' +
-          '</button>';
+          '</button>');
         });
       }
 
@@ -1125,13 +1167,31 @@
           var thumb = p.imagen
             ? '<img src="' + p.imagen + '" class="pos-thumb" onerror="this.style.display=\'none\'"/>'
             : '<div class="pos-thumb-svg">' + placeholderIconSVG('producto') + '</div>';
-          cardsHtml += '<button type="button" data-action="cart-add" data-tipo="producto" data-id="' + p.id + '" class="pos-card" ' + (out ? 'disabled' : '') + '>' +
+          cardList.push('<button type="button" data-action="cart-add" data-tipo="producto" data-id="' + p.id + '" class="pos-card" ' + (out ? 'disabled' : '') + '>' +
             '<div>' + thumb +
             '<div class="flex justify-between items-center mt-2 mb-1 gap-1"><span class="badge b-dim truncate">' + esc(catObj ? catObj.nombre : 'Producto') + '</span><span class="badge ' + stBadge + '">' + (out ? 'Agotado' : 'Stock: ' + p.stock) + '</span></div>' +
             '<div class="text-sm font-bold">' + esc(p.nombre) + '</div></div>' +
             '<div class="flex justify-between items-center pt-2" style="border-top:1px solid var(--border);"><b class="text-gold">' + rd(p.precio) + '</b><span class="badge ' + (out ? 'b-red' : 'b-gold') + '">' + (out ? 'Sin Stock' : '+ Agregar') + '</span></div>' +
-          '</button>';
+          '</button>');
         });
+      }
+
+      var perPage = 8;
+      var totalItems = cardList.length;
+      var totalPages = Math.max(1, Math.ceil(totalItems / perPage));
+      if (posPage > totalPages) posPage = totalPages;
+      if (posPage < 1) posPage = 1;
+      var startIdx = (posPage - 1) * perPage;
+      var visibleCards = totalItems > perPage ? cardList.slice(startIdx, startIdx + perPage) : cardList;
+      var cardsHtml = visibleCards.join('');
+
+      var paginationHtml = '';
+      if (totalItems > perPage) {
+        paginationHtml = '<div class="card p-2 flex justify-between items-center gap-2">' +
+          '<button type="button" data-action="pos-page" data-delta="-1" class="btn btn-out-gold btn-sm" ' + (posPage <= 1 ? 'disabled' : '') + ' style="min-width:115px;">&#9664; Anterior</button>' +
+          '<div class="text-xs font-bold text-gold">Página ' + posPage + ' de ' + totalPages + ' <span class="text-muted">(' + totalItems + ' artículos)</span></div>' +
+          '<button type="button" data-action="pos-page" data-delta="1" class="btn btn-out-gold btn-sm" ' + (posPage >= totalPages ? 'disabled' : '') + ' style="min-width:115px;">Siguiente &#9654;</button>' +
+        '</div>';
       }
 
       var total = posCart.reduce(function (sum, it) { return sum + (it.precio * it.cantidad); }, 0);
@@ -1154,10 +1214,11 @@
             '</div>' +
             catBar +
           '</div>' +
-          '<div class="grid grid-catalog">' + (cardsHtml || '<div class="card text-center text-muted" style="grid-column:1/-1;">No hay artículos que coincidan con el filtro.</div>') + '</div>' +
+          '<div class="grid grid-catalog pos-catalog-scroll">' + (cardsHtml || '<div class="card text-center text-muted" style="grid-column:1/-1;">No hay artículos que coincidan con el filtro.</div>') + '</div>' +
+          paginationHtml +
         '</div>' +
 
-        '<div class="card-gold flex flex-col justify-between gap-3">' +
+        '<div class="card-gold flex flex-col justify-between gap-3 pos-checkout-sticky">' +
           '<div>' +
             '<div class="flex justify-between items-center mb-3">' +
               '<h3 class="serif text-base font-extrabold text-gold">Orden Actual</h3>' +
@@ -2366,8 +2427,14 @@
       if (act === 'logout') { hideNumPad(); window.logoutUser(); return; }
 
       // POS Actions
-      if (act === 'pos-tab') { posTab = actEl.getAttribute('data-tab'); renderActiveModule(); return; }
-      if (act === 'pos-cat') { posCategory = id; renderActiveModule(); return; }
+      if (act === 'pos-tab') { posTab = actEl.getAttribute('data-tab'); posPage = 1; renderActiveModule(); return; }
+      if (act === 'pos-cat') { posCategory = id; posPage = 1; renderActiveModule(); return; }
+      if (act === 'pos-page') {
+        var pDelta = parseInt(actEl.getAttribute('data-delta'), 10) || 0;
+        posPage = Math.max(1, posPage + pDelta);
+        renderActiveModule();
+        return;
+      }
       if (act === 'pos-pay') { posPayMethod = actEl.getAttribute('data-pay'); renderActiveModule(); return; }
       if (act === 'cart-clear') { posCart = []; renderActiveModule(); return; }
       if (act === 'cart-add') {
@@ -2838,7 +2905,7 @@
         var screen = document.getElementById('num-pad-screen');
         if (screen) screen.textContent = e.target.value || '0';
       }
-      if (id === 'pos-search-inp') { posSearch = e.target.value; renderActiveModule(); var el = document.getElementById('pos-search-inp'); if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } return; }
+      if (id === 'pos-search-inp') { posSearch = e.target.value; posPage = 1; renderActiveModule(); var el = document.getElementById('pos-search-inp'); if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } return; }
       if (id === 'pos-client-txt') { posClientWalkin = e.target.value; return; }
       if (id === 'pos-cash-inp') {
         posCashReceived = e.target.value;
