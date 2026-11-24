@@ -89,7 +89,7 @@
     .text-red { color: var(--red); }
 
     /* =====================================================================
-1. LOGIN SCREEN (Dark Glassmorphism - Clean)
+       1. LOGIN SCREEN (Dark Glassmorphism - Clean)
        ===================================================================== */
     #login-view {
       min-height: 100vh;
@@ -151,7 +151,7 @@
     .btn-cream-pill:active { transform: scale(0.985); }
 
     /* =====================================================================
-2. WORKSPACE SHELL & COLLAPSIBLE SIDEBAR WITH EDGE HANDLE TAB
+       2. WORKSPACE SHELL & COLLAPSIBLE SIDEBAR WITH EDGE HANDLE TAB
        ===================================================================== */
     #app-shell {
       display: none;
@@ -256,7 +256,7 @@
     }
 
     /* =====================================================================
-3. CARDS, GRIDS, FORMS, BUTTONS & TABLES
+       3. CARDS, GRIDS, FORMS, BUTTONS & TABLES
        ===================================================================== */
     .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
     .card-gold {
@@ -395,7 +395,7 @@
     }
 
     /* =====================================================================
-4. TOAST NOTIFICATIONS & DIRECT THERMAL PRINT (@media print)
+       4. TOAST NOTIFICATIONS & DIRECT THERMAL PRINT (@media print)
        ===================================================================== */
     #toast-box {
       position: fixed;
@@ -443,7 +443,7 @@
 <body>
 
   <!-- =====================================================================
-1. LOGIN SCREEN (Dark Glassmorphism - Clean, No Demo Hints/Buttons)
+       1. LOGIN SCREEN (Dark Glassmorphism - Clean, No Demo Hints/Buttons)
        ===================================================================== -->
   <section id="login-view">
     <div class="login-card">
@@ -467,7 +467,7 @@
   </section>
 
   <!-- =====================================================================
-2. MAIN WORKSPACE SHELL (Collapsible Sidebar with Left Edge Tab)
+       2. MAIN WORKSPACE SHELL (Collapsible Sidebar with Left Edge Tab)
        ===================================================================== -->
   <div id="app-shell">
     <aside id="sidebar">
@@ -511,7 +511,7 @@
           </div>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
-          <span id="cloud-status-pill" class="badge b-dim">&#9729; Modo Local</span>
+          <span id="cloud-status-pill" class="badge b-dim">&#9729; Conectando Nube...</span>
           <span id="today-pill" class="badge b-gold"></span>
           <button type="button" data-action="logout" class="btn btn-red btn-sm">Cerrar Sesión</button>
         </div>
@@ -530,6 +530,35 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 
   <script>
+    // =========================================================================
+    // 0. AUTOMATIC FIREBASE INITIALIZATION (gold-label-barber-a5d89)
+    // =========================================================================
+    var DEFAULT_FB = {
+      apiKey: "AIzaSyAeo_2AhYfLRzUtvqeDMqk6-CAY4e2RS18",
+      authDomain: "gold-label-barber-a5d89.firebaseapp.com",
+      projectId: "gold-label-barber-a5d89",
+      storageBucket: "gold-label-barber-a5d89.firebasestorage.app",
+      messagingSenderId: "752587298181",
+      appId: "1:752587298181:web:be11c8f2dbc56e5015a0ec"
+    };
+
+    var db = null;
+    var cloudConnected = false;
+    var lastCloudUpdatedAt = '';
+    var isApplyingRemote = false;
+
+    try {
+      if (typeof firebase !== 'undefined') {
+        if (!firebase.apps.length) {
+          firebase.initializeApp(DEFAULT_FB);
+        }
+        db = firebase.firestore();
+        cloudConnected = true;
+      }
+    } catch (e) {
+      console.error("Error inicializando Firebase:", e);
+    }
+
     // =========================================================================
     // 1. SAFE PERSISTENCE & CONSTANTS
     // =========================================================================
@@ -622,14 +651,14 @@
           customLogo: ''
         },
         cloud: {
-          enabled: false,
+          enabled: true,
           snippet: '',
-          apiKey: '',
-          projectId: '',
-          authDomain: '',
-          appId: '',
-          storageBucket: '',
-          messagingSenderId: '',
+          apiKey: DEFAULT_FB.apiKey,
+          projectId: DEFAULT_FB.projectId,
+          authDomain: DEFAULT_FB.authDomain,
+          appId: DEFAULT_FB.appId,
+          storageBucket: DEFAULT_FB.storageBucket,
+          messagingSenderId: DEFAULT_FB.messagingSenderId,
           lastSync: ''
         },
         productCategories: [
@@ -710,9 +739,28 @@
       state = defaultState();
     }
 
+    function pushStateToFirebase() {
+      if (!db || isApplyingRemote) return;
+      var stamp = new Date().toISOString();
+      lastCloudUpdatedAt = stamp;
+      state.cloud.enabled = true;
+      state.cloud.projectId = DEFAULT_FB.projectId;
+      state.cloud.lastSync = new Date().toLocaleString('es-DO');
+      db.collection("gold_label_barber").doc("main_data").set({
+        updatedAt: stamp,
+        payloadJson: JSON.stringify(state)
+      }).then(function () {
+        cloudConnected = true;
+        updateCloudPill();
+      }).catch(function (err) {
+        console.error("Error enviando datos a Firestore:", err);
+      });
+    }
+
     function saveState() {
       safeSet(STORAGE_KEY, JSON.stringify(state));
       updateCloudPill();
+      pushStateToFirebase();
     }
 
     // =========================================================================
@@ -1057,4 +1105,1490 @@
 
       var totalAdelantos = dayAdv.reduce(function (sum, a) { return sum + (Number(a.monto) || 0); }, 0);
       var efectivoNeto = totalVendido - totalAdelantos;
-      var pctServ = totalVendido > 0 ? Math.round((ingServicios / total
+      var pctServ = totalVendido > 0 ? Math.round((ingServicios / totalVendido) * 100) : 0;
+      var pctProd = totalVendido > 0 ? (100 - pctServ) : 0;
+
+      var topBarbers = Object.keys(byBarber).map(function (name) {
+        return { nombre: name, total: byBarber[name] };
+      }).sort(function (a, b) { return b.total - a.total; });
+
+      root.innerHTML = '<div class="flex flex-col gap-4">' +
+        '<div class="card flex justify-between items-center flex-wrap gap-2">' +
+          '<div><h3 class="text-base font-bold text-gold">Resumen Financiero del Día</h3><p class="text-xs text-muted">Indicadores en tiempo real en Pesos Dominicanos (RD$)</p></div>' +
+          '<div class="flex items-center gap-2"><label class="lbl mb-0">Fecha:</label><input type="date" id="dash-date-inp" value="' + dashDate + '" style="width:170px;" /></div>' +
+        '</div>' +
+
+        '<div class="grid grid-4">' +
+          '<div class="card-gold"><div class="text-xs uppercase text-muted font-bold">Total Vendido</div><div class="text-xl font-extrabold text-gold-hi mt-1">' + rd(totalVendido) + '</div><div class="text-xs text-muted mt-1">' + daySales.length + ' tickets emitidos</div></div>' +
+          '<div class="card"><div class="text-xs uppercase text-muted font-bold">Ingresos Servicios</div><div class="text-xl font-extrabold text-green mt-1">' + rd(ingServicios) + '</div><div class="text-xs text-muted mt-1">' + pctServ + '% del total</div></div>' +
+          '<div class="card"><div class="text-xs uppercase text-muted font-bold">Ingresos Productos</div><div class="text-xl font-extrabold text-gold mt-1">' + rd(ingProductos) + '</div><div class="text-xs text-muted mt-1">' + pctProd + '% del total</div></div>' +
+          '<div class="card"><div class="text-xs uppercase text-muted font-bold">Adelantos / Efectivo Neto</div><div class="text-xl font-extrabold text-green mt-1">' + rd(efectivoNeto) + '</div><div class="text-xs text-amber mt-1">Adelantos: -' + rd(totalAdelantos) + '</div></div>' +
+        '</div>' +
+
+        '<div class="grid grid-2">' +
+          '<div class="card">' +
+            '<h4 class="text-sm font-bold text-gold mb-3">Distribución: Servicios vs Productos</h4>' +
+            '<div class="mb-3"><div class="flex justify-between text-xs mb-1"><span>Servicios (' + pctServ + '%)</span><b>' + rd(ingServicios) + '</b></div>' +
+            '<div style="height:12px;background:#1e2433;border-radius:999px;overflow:hidden;"><div style="height:100%;width:' + pctServ + '%;background:var(--green);"></div></div></div>' +
+            '<div><div class="flex justify-between text-xs mb-1"><span>Productos (' + pctProd + '%)</span><b>' + rd(ingProductos) + '</b></div>' +
+            '<div style="height:12px;background:#1e2433;border-radius:999px;overflow:hidden;"><div style="height:100%;width:' + pctProd + '%;background:var(--gold);"></div></div></div>' +
+          '</div>' +
+
+          '<div class="card">' +
+            '<h4 class="text-sm font-bold text-gold mb-3">Top Barberos del Día</h4>' +
+            (topBarbers.length === 0 ? '<p class="text-xs text-muted">Sin ventas registradas en esta fecha.</p>' :
+            topBarbers.map(function (tb, i) {
+              return '<div class="subcard flex justify-between items-center mb-2"><span class="text-xs font-bold">#' + (i + 1) + ' ' + esc(tb.nombre) + '</span><span class="badge b-gold">' + rd(tb.total) + '</span></div>';
+            }).join('')) +
+          '</div>' +
+        '</div>' +
+
+        '<div class="card">' +
+          '<h4 class="text-sm font-bold text-gold mb-3">Actividad del Día (' + dashDate + ')</h4>' +
+          (daySales.length === 0 ? '<p class="text-xs text-muted">No hay movimientos registrados para esta fecha.</p>' :
+          '<div class="table-wrap"><table><thead><tr><th>Ticket</th><th>Hora</th><th>Cliente</th><th>Le Atendió</th><th>Pago</th><th class="text-right">Total</th></tr></thead><tbody>' +
+          daySales.map(function (s) {
+            return '<tr><td class="mono text-xs text-gold font-bold">' + esc(s.id) + '</td><td class="text-xs">' + esc(s.hora || '') + '</td><td class="text-xs font-bold">' + esc(s.clienteNombre) + '</td><td class="text-xs">' + esc(s.barberoNombre) + '</td><td><span class="badge b-dim">' + esc(s.metodoPago) + '</span></td><td class="text-right text-xs font-bold text-green">' + rd(s.total) + '</td></tr>';
+          }).join('') +
+          '</tbody></table></div>') +
+        '</div>' +
+      '</div>';
+    }
+
+    // =========================================================================
+    // 6. MODULE 3: CLIENTES
+    // =========================================================================
+    function renderClientes(root) {
+      var ed = editClientId ? state.clients.find(function (c) { return c.id === editClientId; }) : null;
+      var q = clientSearch.toLowerCase().trim();
+      var list = state.clients.filter(function (c) {
+        return !q || c.nombre.toLowerCase().indexOf(q) !== -1 || (c.telefono || '').indexOf(q) !== -1;
+      });
+
+      root.innerHTML = '<div class="grid grid-split">' +
+        '<div class="card-gold">' +
+          '<h3 class="text-base font-bold text-gold mb-3">' + (ed ? 'Editar Cliente' : 'Registrar Cliente') + '</h3>' +
+          '<form data-form="client" class="flex flex-col gap-3">' +
+            '<div><label class="lbl">Nombre Completo *</label><input type="text" id="cl-nom" required value="' + esc(ed ? ed.nombre : '') + '" /></div>' +
+            '<div><label class="lbl">Teléfono</label><input type="text" id="cl-tel" value="' + esc(ed ? ed.telefono : '') + '" placeholder="809-555-0000" /></div>' +
+            '<div><label class="lbl">Notas / Corte Preferido</label><textarea id="cl-not" rows="3" placeholder="Ej. Degradado medio, navaja...">' + esc(ed ? ed.notas : '') + '</textarea></div>' +
+            '<div class="flex gap-2"><button type="submit" class="btn btn-gold flex-1">Guardar Cliente</button>' +
+            (ed ? '<button type="button" data-action="client-cancel" class="btn btn-dark">Cancelar</button>' : '') + '</div>' +
+          '</form>' +
+        '</div>' +
+
+        '<div class="card">' +
+          '<div class="flex justify-between items-center flex-wrap gap-2 mb-3">' +
+            '<h3 class="text-base font-bold">Cartera de Clientes (' + state.clients.length + ')</h3>' +
+            '<input type="search" id="cl-search-inp" value="' + esc(clientSearch) + '" placeholder="Buscar cliente o teléfono..." style="max-width:240px;" />' +
+          '</div>' +
+          '<div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Teléfono</th><th>Visitas</th><th>Total Gastado</th><th>Preferencias</th><th class="text-right">Acciones</th></tr></thead><tbody>' +
+          list.map(function (c) {
+            var cSales = state.sales.filter(function (s) { return s.clienteNombre === c.nombre; });
+            var spent = cSales.reduce(function (sum, s) { return sum + (Number(s.total) || 0); }, 0);
+            return '<tr>' +
+              '<td class="font-bold text-xs">' + esc(c.nombre) + '</td>' +
+              '<td class="text-xs text-muted">' + esc(c.telefono || '-') + '</td>' +
+              '<td><span class="badge b-dim">' + cSales.length + '</span></td>' +
+              '<td class="text-xs font-bold text-gold">' + rd(spent) + '</td>' +
+              '<td class="text-xs text-muted">' + esc(c.notas || '-') + '</td>' +
+              '<td class="text-right"><button type="button" data-action="client-edit" data-id="' + c.id + '" class="btn btn-dark btn-xs">Editar</button> <button type="button" data-action="client-del" data-id="' + c.id + '" class="btn btn-red btn-xs">X</button></td>' +
+            '</tr>';
+          }).join('') +
+          '</tbody></table></div>' +
+        '</div>' +
+      '</div>';
+    }
+
+    // =========================================================================
+    // 7. MODULE 4: PRODUCTOS (CATEGORÍAS, IMÁGENES Y CONTROL DE STOCK)
+    // =========================================================================
+    function renderProductos(root) {
+      var edCat = editCatId ? state.productCategories.find(function (c) { return c.id === editCatId; }) : null;
+      var edProd = editProdId ? state.products.find(function (p) { return p.id === editProdId; }) : null;
+      var prevImg = tempProdImg || (edProd ? (edProd.imagen || '') : '');
+
+      root.innerHTML = '<div class="flex flex-col gap-4">' +
+        '<div class="card">' +
+          '<div class="flex justify-between items-center flex-wrap gap-2 mb-3">' +
+            '<div><h3 class="text-sm font-bold text-gold">Categorías de Productos</h3><p class="text-xs text-muted">Crea, edita o elimina categorías para filtrar productos en Ventas POS</p></div>' +
+            '<form data-form="category" class="flex gap-2 items-center">' +
+              '<input type="text" id="cat-nom" required value="' + esc(edCat ? edCat.nombre : '') + '" placeholder="Nueva categoría..." style="width:210px;" />' +
+              '<button type="submit" class="btn btn-gold btn-sm">' + (edCat ? 'Actualizar' : '+ Crear') + '</button>' +
+              (edCat ? '<button type="button" data-action="cat-cancel" class="btn btn-dark btn-sm">Cancelar</button>' : '') +
+            '</form>' +
+          '</div>' +
+          '<div class="flex gap-2 flex-wrap">' +
+            state.productCategories.map(function (c) {
+              return '<div class="subcard inline-flex items-center gap-2 p-2">' +
+                '<span class="text-xs font-bold">' + esc(c.nombre) + '</span>' +
+                '<button type="button" data-action="cat-edit" data-id="' + c.id + '" class="btn btn-dark btn-xs">Editar</button>' +
+                '<button type="button" data-action="cat-del" data-id="' + c.id + '" class="btn btn-red btn-xs">X</button>' +
+              '</div>';
+            }).join('') +
+          '</div>' +
+        '</div>' +
+
+        '<div class="grid grid-split">' +
+          '<div class="card-gold">' +
+            '<h3 class="text-base font-bold text-gold mb-3">' + (edProd ? 'Editar Producto' : 'Nuevo Producto') + '</h3>' +
+            '<form data-form="product" class="flex flex-col gap-2">' +
+              '<div><label class="lbl">Nombre del Producto *</label><input type="text" id="pr-nom" required value="' + esc(edProd ? edProd.nombre : '') + '" /></div>' +
+              '<div><label class="lbl">Categoría *</label><select id="pr-cat">' +
+                state.productCategories.map(function (c) {
+                  return '<option value="' + c.id + '" ' + (edProd && edProd.categoryId === c.id ? 'selected' : '') + '>' + esc(c.nombre) + '</option>';
+                }).join('') +
+              '</select></div>' +
+              '<div class="grid grid-3 gap-2">' +
+                '<div><label class="lbl">Costo RD$</label><input type="number" step="0.01" id="pr-cos" required value="' + (edProd ? edProd.costo : 250) + '" /></div>' +
+                '<div><label class="lbl">Precio RD$</label><input type="number" step="0.01" id="pr-pre" required value="' + (edProd ? edProd.precio : 650) + '" /></div>' +
+                '<div><label class="lbl">Stock</label><input type="number" id="pr-stk" required value="' + (edProd ? edProd.stock : 10) + '" /></div>' +
+              '</div>' +
+              '<div class="subcard">' +
+                '<label class="lbl">Imagen del Producto</label>' +
+                '<div class="flex items-center gap-2">' +
+                  (prevImg ? '<img src="' + prevImg + '" style="width:48px;height:48px;object-fit:cover;border-radius:8px;" />' : '<span class="badge b-gold">Sin foto</span>') +
+                  '<label class="btn btn-out-gold btn-xs" style="cursor:pointer;">Subir Archivo<input type="file" id="pr-file" accept="image/*" class="hidden" /></label>' +
+                  (prevImg ? '<button type="button" data-action="prod-clear-img" class="btn btn-red btn-xs">Quitar</button>' : '') +
+                '</div>' +
+                '<input type="url" id="pr-url" class="mt-2" value="' + (prevImg && prevImg.indexOf('data:') !== 0 ? esc(prevImg) : '') + '" placeholder="O pega una URL de imagen..." />' +
+              '</div>' +
+              '<div class="flex gap-2 mt-1"><button type="submit" class="btn btn-gold flex-1">Guardar Producto</button>' +
+              (edProd ? '<button type="button" data-action="prod-cancel" class="btn btn-dark">Cancelar</button>' : '') + '</div>' +
+            '</form>' +
+          '</div>' +
+
+          '<div class="card">' +
+            '<h3 class="text-base font-bold mb-3">Inventario de Productos (' + state.products.length + ')</h3>' +
+            '<div class="table-wrap"><table><thead><tr><th>Producto</th><th>Categoría</th><th>Costo / Venta</th><th>Margen</th><th>Stock</th><th>Ajuste Rápido</th><th class="text-right">Acciones</th></tr></thead><tbody>' +
+            state.products.map(function (p) {
+              var cat = state.productCategories.find(function (c) { return c.id === p.categoryId; });
+              var profit = (Number(p.precio) || 0) - (Number(p.costo) || 0);
+              var pct = p.precio > 0 ? Math.round((profit / p.precio) * 100) : 0;
+              var stCls = p.stock <= 0 ? 'b-red' : (p.stock <= 5 ? 'b-amber' : 'b-green');
+              var batchRow = batchProdId === p.id
+                ? '<div class="flex gap-1 items-center mt-1 flex-wrap">' +
+                    '<button type="button" data-action="prod-stock" data-id="' + p.id + '" data-delta="-5" class="btn btn-red btn-xs">-5</button>' +
+                    '<button type="button" data-action="prod-stock" data-id="' + p.id + '" data-delta="5" class="btn btn-green btn-xs">+5</button>' +
+                    '<button type="button" data-action="prod-stock" data-id="' + p.id + '" data-delta="10" class="btn btn-green btn-xs">+10</button>' +
+                    '<input type="number" id="batch-inp-' + p.id + '" value="15" style="width:60px;padding:3px 6px;font-size:11px;" />' +
+                    '<button type="button" data-action="prod-batch-apply" data-id="' + p.id + '" class="btn btn-gold btn-xs">Aplicar</button>' +
+                  '</div>'
+                : '';
+              return '<tr>' +
+                '<td><div class="flex items-center gap-2">' + (p.imagen ? '<img src="' + p.imagen + '" style="width:36px;height:36px;object-fit:cover;border-radius:7px;" />' : '<span class="badge b-gold">PRD</span>') + '<span class="text-xs font-bold">' + esc(p.nombre) + '</span></div></td>' +
+                '<td><span class="badge b-dim">' + esc(cat ? cat.nombre : '-') + '</span></td>' +
+                '<td class="text-xs"><span class="text-muted">' + rd(p.costo) + '</span> / <b class="text-gold">' + rd(p.precio) + '</b></td>' +
+                '<td class="text-xs text-green font-bold">' + rd(profit) + ' (' + pct + '%)</td>' +
+                '<td><span class="badge ' + stCls + '">' + (p.stock <= 0 ? 'Agotado' : p.stock + ' uds') + '</span></td>' +
+                '<td><div class="flex gap-1">' +
+                  '<button type="button" data-action="prod-stock" data-id="' + p.id + '" data-delta="-1" class="btn btn-dark btn-xs">-1</button>' +
+                  '<button type="button" data-action="prod-stock" data-id="' + p.id + '" data-delta="1" class="btn btn-dark btn-xs">+1</button>' +
+                  '<button type="button" data-action="prod-batch-toggle" data-id="' + p.id + '" class="btn btn-out-gold btn-xs">+Lote</button>' +
+                '</div>' + batchRow + '</td>' +
+                '<td class="text-right"><button type="button" data-action="prod-edit" data-id="' + p.id + '" class="btn btn-dark btn-xs">Editar</button> <button type="button" data-action="prod-del" data-id="' + p.id + '" class="btn btn-red btn-xs">X</button></td>' +
+              '</tr>';
+            }).join('') +
+            '</tbody></table></div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }
+
+    // =========================================================================
+    // 8. MODULE 5: SERVICIOS (CON IMÁGENES)
+    // =========================================================================
+    function renderServicios(root) {
+      var ed = editServId ? state.services.find(function (s) { return s.id === editServId; }) : null;
+      var prevImg = tempServImg || (ed ? (ed.imagen || '') : '');
+
+      root.innerHTML = '<div class="grid grid-split">' +
+        '<div class="card-gold">' +
+          '<h3 class="text-base font-bold text-gold mb-3">' + (ed ? 'Editar Servicio' : 'Nuevo Servicio') + '</h3>' +
+          '<form data-form="service" class="flex flex-col gap-2">' +
+            '<div><label class="lbl">Nombre del Servicio *</label><input type="text" id="sv-nom" required value="' + esc(ed ? ed.nombre : '') + '" /></div>' +
+            '<div class="grid grid-2 gap-2">' +
+              '<div><label class="lbl">Duración (min) *</label><input type="number" id="sv-dur" required value="' + (ed ? ed.duracion : 30) + '" /></div>' +
+              '<div><label class="lbl">Precio RD$ *</label><input type="number" step="0.01" id="sv-pre" required value="' + (ed ? ed.precio : 500) + '" /></div>' +
+            '</div>' +
+            '<div><label class="lbl">Descripción</label><input type="text" id="sv-des" value="' + esc(ed ? (ed.descripcion || '') : '') + '" placeholder="Detalles del servicio..." /></div>' +
+            '<div class="subcard">' +
+              '<label class="lbl">Imagen del Servicio</label>' +
+              '<div class="flex items-center gap-2">' +
+                (prevImg ? '<img src="' + prevImg + '" style="width:48px;height:48px;object-fit:cover;border-radius:8px;" />' : '<span class="badge b-gold">Sin foto</span>') +
+                '<label class="btn btn-out-gold btn-xs" style="cursor:pointer;">Subir Archivo<input type="file" id="sv-file" accept="image/*" class="hidden" /></label>' +
+                (prevImg ? '<button type="button" data-action="serv-clear-img" class="btn btn-red btn-xs">Quitar</button>' : '') +
+              '</div>' +
+              '<input type="url" id="sv-url" class="mt-2" value="' + (prevImg && prevImg.indexOf('data:') !== 0 ? esc(prevImg) : '') + '" placeholder="O pega una URL de imagen..." />' +
+            '</div>' +
+            '<div class="flex gap-2 mt-1"><button type="submit" class="btn btn-gold flex-1">Guardar Servicio</button>' +
+            (ed ? '<button type="button" data-action="serv-cancel" class="btn btn-dark">Cancelar</button>' : '') + '</div>' +
+          '</form>' +
+        '</div>' +
+
+        '<div class="card">' +
+          '<h3 class="text-base font-bold mb-3">Catálogo de Servicios (' + state.services.length + ')</h3>' +
+          '<div class="table-wrap"><table><thead><tr><th>Servicio</th><th>Duración</th><th>Descripción</th><th>Precio</th><th class="text-right">Acciones</th></tr></thead><tbody>' +
+          state.services.map(function (s) {
+            return '<tr>' +
+              '<td><div class="flex items-center gap-2">' + (s.imagen ? '<img src="' + s.imagen + '" style="width:38px;height:38px;object-fit:cover;border-radius:7px;" />' : '<span class="badge b-gold">SRV</span>') + '<span class="text-xs font-bold">' + esc(s.nombre) + '</span></div></td>' +
+              '<td class="text-xs">' + s.duracion + ' min</td>' +
+              '<td class="text-xs text-muted">' + esc(s.descripcion || '-') + '</td>' +
+              '<td class="text-xs font-bold text-gold">' + rd(s.precio) + '</td>' +
+              '<td class="text-right"><button type="button" data-action="serv-edit" data-id="' + s.id + '" class="btn btn-dark btn-xs">Editar</button> <button type="button" data-action="serv-del" data-id="' + s.id + '" class="btn btn-red btn-xs">X</button></td>' +
+            '</tr>';
+          }).join('') +
+          '</tbody></table></div>' +
+        '</div>' +
+      '</div>';
+    }
+
+    // =========================================================================
+    // 9. MODULE 6: REPORTES
+    // =========================================================================
+    function renderReportes(root) {
+      var filtered = state.sales.filter(function (s) {
+        var inRange = (!repFrom || s.fecha >= repFrom) && (!repTo || s.fecha <= repTo);
+        var inPay = repPay === 'Todos' || s.metodoPago === repPay;
+        return inRange && inPay;
+      });
+      var sumTotal = filtered.reduce(function (sum, s) { return sum + (Number(s.total) || 0); }, 0);
+      var sumEf = 0, sumTar = 0, sumTra = 0;
+      filtered.forEach(function (s) {
+        var t = Number(s.total) || 0;
+        if (s.metodoPago === 'Tarjeta') sumTar += t;
+        else if (s.metodoPago === 'Transferencia') sumTra += t;
+        else sumEf += t;
+      });
+
+      root.innerHTML = '<div class="flex flex-col gap-4">' +
+        '<div class="card flex justify-between items-end flex-wrap gap-3">' +
+          '<div class="flex gap-2 flex-wrap">' +
+            '<div><label class="lbl">Desde</label><input type="date" id="rep-from" value="' + repFrom + '" style="width:155px;" /></div>' +
+            '<div><label class="lbl">Hasta</label><input type="date" id="rep-to" value="' + repTo + '" style="width:155px;" /></div>' +
+            '<div><label class="lbl">Método de Pago</label><select id="rep-pay" style="width:150px;">' +
+              ['Todos', 'Efectivo', 'Tarjeta', 'Transferencia'].map(function (m) {
+                return '<option value="' + m + '" ' + (repPay === m ? 'selected' : '') + '>' + m + '</option>';
+              }).join('') +
+            '</select></div>' +
+          '</div>' +
+          '<div class="flex items-center gap-3">' +
+            '<div class="text-right"><div class="text-xs text-muted">Total Filtrado (' + filtered.length + ' ventas)</div><div class="text-lg font-extrabold text-gold-hi">' + rd(sumTotal) + '</div></div>' +
+            '<button type="button" data-action="rep-csv" class="btn btn-out-gold btn-sm">Exportar CSV</button>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="grid grid-3">' +
+          '<div class="card"><div class="text-xs uppercase text-muted font-bold">Efectivo</div><div class="text-base font-extrabold text-green mt-1">' + rd(sumEf) + '</div></div>' +
+          '<div class="card"><div class="text-xs uppercase text-muted font-bold">Tarjeta</div><div class="text-base font-extrabold text-gold mt-1">' + rd(sumTar) + '</div></div>' +
+          '<div class="card"><div class="text-xs uppercase text-muted font-bold">Transferencia</div><div class="text-base font-extrabold text-gold mt-1">' + rd(sumTra) + '</div></div>' +
+        '</div>' +
+
+        '<div class="card">' +
+          '<div class="table-wrap"><table><thead><tr><th>Ticket</th><th>Fecha / Hora</th><th>Cliente</th><th>Le Atendió</th><th>Pago</th><th class="text-right">Total</th><th class="text-right">Acción</th></tr></thead><tbody>' +
+          (filtered.length === 0 ? '<tr><td colspan="7" class="text-center text-muted p-4">No hay ventas en el rango seleccionado.</td></tr>' :
+          filtered.map(function (s) {
+            return '<tr>' +
+              '<td class="mono font-bold text-gold text-xs">' + esc(s.id) + '</td>' +
+              '<td class="text-xs">' + esc(s.fecha) + ' ' + esc(s.hora || '') + '</td>' +
+              '<td class="text-xs font-bold">' + esc(s.clienteNombre) + '</td>' +
+              '<td class="text-xs">' + esc(s.barberoNombre) + '</td>' +
+              '<td><span class="badge b-dim">' + esc(s.metodoPago) + '</span></td>' +
+              '<td class="text-right text-xs font-bold text-green">' + rd(s.total) + '</td>' +
+              '<td class="text-right"><button type="button" data-action="print-sale" data-id="' + s.id + '" class="btn btn-out-gold btn-xs">&#128424; Imprimir 80mm</button></td>' +
+            '</tr>';
+          }).join('')) +
+          '</tbody></table></div>' +
+        '</div>' +
+      '</div>';
+    }
+
+    // =========================================================================
+    // 10. MODULE 7: BARBEROS + ADELANTO DE SUELDO (IMPRESIÓN DIRECTA 80MM)
+    // =========================================================================
+    function renderBarberos(root) {
+      var ed = editBarberId ? state.barbers.find(function (b) { return b.id === editBarberId; }) : null;
+      var selAdvBarber = advBarberPreset || (state.barbers[0] ? state.barbers[0].id : '');
+
+      root.innerHTML = '<div class="flex flex-col gap-4">' +
+        '<div class="grid grid-split">' +
+          '<div class="card">' +
+            '<h3 class="text-base font-bold text-gold mb-3">' + (ed ? 'Editar Barbero' : 'Registrar Barbero') + '</h3>' +
+            '<form data-form="barber" class="flex flex-col gap-2">' +
+              '<div><label class="lbl">Nombre Completo *</label><input type="text" id="br-nom" required value="' + esc(ed ? ed.nombre : '') + '" /></div>' +
+              '<div class="grid grid-2 gap-2">' +
+                '<div><label class="lbl">Cédula *</label><input type="text" id="br-ced" required value="' + esc(ed ? ed.cedula : '') + '" placeholder="001-0000000-0" /></div>' +
+                '<div><label class="lbl">Teléfono</label><input type="text" id="br-tel" value="' + esc(ed ? ed.telefono : '') + '" /></div>' +
+              '</div>' +
+              '<div class="grid grid-2 gap-2">' +
+                '<div><label class="lbl">Comisión % *</label><input type="number" min="0" max="100" id="br-com" required value="' + (ed ? ed.comision : 50) + '" /></div>' +
+                '<div><label class="lbl">Estado</label><select id="br-act"><option value="1" ' + (!ed || ed.activo !== false ? 'selected' : '') + '>Activo</option><option value="0" ' + (ed && ed.activo === false ? 'selected' : '') + '>Inactivo</option></select></div>' +
+              '</div>' +
+              '<div class="flex gap-2 mt-1"><button type="submit" class="btn btn-gold flex-1">Guardar Barbero</button>' +
+              (ed ? '<button type="button" data-action="barb-cancel" class="btn btn-dark">Cancelar</button>' : '') + '</div>' +
+            '</form>' +
+          '</div>' +
+
+          '<div class="card">' +
+            '<h3 class="text-base font-bold mb-3">Staff de Barberos (' + state.barbers.length + ')</h3>' +
+            '<div class="table-wrap"><table><thead><tr><th>Barbero</th><th>Cédula</th><th>Comisión</th><th>Estado</th><th class="text-right">Acciones</th></tr></thead><tbody>' +
+            state.barbers.map(function (b) {
+              return '<tr>' +
+                '<td class="text-xs font-bold">' + esc(b.nombre) + '</td>' +
+                '<td class="text-xs text-muted">' + esc(b.cedula) + '</td>' +
+                '<td><span class="badge b-gold">' + b.comision + '%</span></td>' +
+                '<td><span class="badge ' + (b.activo !== false ? 'b-green' : 'b-red') + '">' + (b.activo !== false ? 'Activo' : 'Inactivo') + '</span></td>' +
+                '<td class="text-right">' +
+                  '<button type="button" data-action="barb-preset-adv" data-id="' + b.id + '" class="btn btn-out-gold btn-xs">Adelanto</button> ' +
+                  '<button type="button" data-action="barb-edit" data-id="' + b.id + '" class="btn btn-dark btn-xs">Editar</button> ' +
+                  '<button type="button" data-action="barb-del" data-id="' + b.id + '" class="btn btn-red btn-xs">X</button>' +
+                '</td>' +
+              '</tr>';
+            }).join('') +
+            '</tbody></table></div>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="grid grid-split">' +
+          '<div class="card-gold">' +
+            '<h3 class="text-base font-bold text-gold mb-2">Adelanto de Sueldo / Comisión</h3>' +
+            '<p class="text-xs text-muted mb-3">Se descuenta automáticamente en el Cierre de Caja e imprime directamente el recibo 80mm para firma.</p>' +
+            '<form data-form="advance" class="flex flex-col gap-2">' +
+              '<div><label class="lbl">Barbero *</label><select id="ad-barb">' +
+                state.barbers.map(function (b) {
+                  return '<option value="' + b.id + '" ' + (b.id === selAdvBarber ? 'selected' : '') + '>' + esc(b.nombre) + '</option>';
+                }).join('') +
+              '</select></div>' +
+              '<div class="grid grid-2 gap-2">' +
+                '<div><label class="lbl">Monto RD$ *</label><input type="number" step="0.01" min="1" id="ad-monto" required placeholder="500.00" /></div>' +
+                '<div><label class="lbl">Fecha *</label><input type="date" id="ad-fecha" required value="' + TODAY + '" /></div>' +
+              '</div>' +
+              '<div><label class="lbl">Concepto / Nota *</label><input type="text" id="ad-motivo" required value="Adelanto de sueldo / comisión" /></div>' +
+              '<button type="submit" class="btn btn-gold w-full mt-1">Registrar e Imprimir Recibo Firma (80mm)</button>' +
+            '</form>' +
+          '</div>' +
+
+          '<div class="card">' +
+            '<h3 class="text-base font-bold mb-3">Historial de Adelantos (' + state.advances.length + ')</h3>' +
+            '<div class="table-wrap"><table><thead><tr><th>Ref</th><th>Fecha</th><th>Barbero</th><th>Concepto</th><th class="text-right">Monto</th><th class="text-right">Recibo</th></tr></thead><tbody>' +
+            state.advances.map(function (a) {
+              return '<tr>' +
+                '<td class="mono text-gold font-bold text-xs">' + esc(a.id) + '</td>' +
+                '<td class="text-xs">' + esc(a.fecha) + '</td>' +
+                '<td class="text-xs font-bold">' + esc(a.barberoNombre) + '</td>' +
+                '<td class="text-xs text-muted">' + esc(a.motivo) + '</td>' +
+                '<td class="text-right text-xs font-bold text-amber">' + rd(a.monto) + '</td>' +
+                '<td class="text-right"><button type="button" data-action="print-advance" data-id="' + a.id + '" class="btn btn-out-gold btn-xs">&#128424; Imprimir 80mm</button></td>' +
+              '</tr>';
+            }).join('') +
+            '</tbody></table></div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }
+
+    // =========================================================================
+    // 11. MODULE 8: REPORTE DE BARBEROS
+    // =========================================================================
+    function renderReporteBarberos(root) {
+      var rows = state.barbers.map(function (b) {
+        var bSales = state.sales.filter(function (s) { return s.barberoId === b.id && s.fecha === barbRepDate; });
+        var bAdv = state.advances.filter(function (a) { return a.barberoId === b.id && a.fecha === barbRepDate; });
+        var countItems = 0;
+        var totalVendido = 0;
+        bSales.forEach(function (s) {
+          totalVendido += Number(s.total) || 0;
+          countItems += (s.items || []).reduce(function (c, it) { return c + (Number(it.cantidad) || 1); }, 0);
+        });
+        var comisionRD = totalVendido * ((Number(b.comision) || 0) / 100);
+        var adelantosRD = bAdv.reduce(function (sum, a) { return sum + (Number(a.monto) || 0); }, 0);
+        var netoPagar = comisionRD - adelantosRD;
+        return { b: b, countItems: countItems, totalVendido: totalVendido, comisionRD: comisionRD, adelantosRD: adelantosRD, netoPagar: netoPagar };
+      });
+
+      root.innerHTML = '<div class="flex flex-col gap-4">' +
+        '<div class="card flex justify-between items-center flex-wrap gap-2">' +
+          '<div><h3 class="text-base font-bold text-gold">Desglose de Ventas, Comisiones y Rendimiento por Barbero</h3><p class="text-xs text-muted">Consulta la producción diaria e imprime tickets individuales de liquidación 80mm</p></div>' +
+          '<div class="flex items-center gap-2"><label class="lbl mb-0">Fecha del Reporte:</label><input type="date" id="brep-date" value="' + barbRepDate + '" style="width:170px;" /></div>' +
+        '</div>' +
+
+        '<div class="card">' +
+          '<div class="table-wrap"><table><thead><tr><th>Barbero</th><th class="text-center">Serv./Art.</th><th class="text-right">Total Vendido</th><th class="text-right">Comisión</th><th class="text-right">Adelantos</th><th class="text-right">Neto a Pagar</th><th class="text-right">Liquidación</th></tr></thead><tbody>' +
+          rows.map(function (r) {
+            return '<tr>' +
+              '<td class="text-xs font-bold">' + esc(r.b.nombre) + '</td>' +
+              '<td class="text-center"><span class="badge b-dim">' + r.countItems + '</span></td>' +
+              '<td class="text-right text-xs font-bold">' + rd(r.totalVendido) + '</td>' +
+              '<td class="text-right text-xs font-bold text-gold">' + rd(r.comisionRD) + ' (' + r.b.comision + '%)</td>' +
+              '<td class="text-right text-xs text-amber">-' + rd(r.adelantosRD) + '</td>' +
+              '<td class="text-right text-xs font-extrabold text-green">' + rd(r.netoPagar) + '</td>' +
+              '<td class="text-right"><button type="button" data-action="print-barber-rep" data-id="' + r.b.id + '" class="btn btn-out-gold btn-xs">&#128424; Ticket</button></td>' +
+            '</tr>';
+          }).join('') +
+          '</tbody></table></div>' +
+
+          '<div class="mt-4 pt-3" style="border-top:1px solid var(--border);">' +
+            '<h4 class="text-xs font-bold uppercase text-gold mb-2">Tickets Individuales por Barbero — Fecha Seleccionada (' + barbRepDate + ')</h4>' +
+            '<div class="grid grid-3 gap-2">' +
+              rows.map(function (r) {
+                return '<div class="subcard flex justify-between items-center gap-2">' +
+                  '<div class="min-w-0"><div class="text-xs font-bold truncate">' + esc(r.b.nombre) + '</div><div class="text-xs text-green font-bold">Neto: ' + rd(r.netoPagar) + '</div></div>' +
+                  '<button type="button" data-action="print-barber-rep" data-id="' + r.b.id + '" class="btn btn-gold btn-xs shrink-0">&#128424; Ticket 80mm</button>' +
+                '</div>';
+              }).join('') +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }
+
+    // =========================================================================
+    // 12. MODULE 9: REGISTRO DE PERSONAL
+    // =========================================================================
+    function renderPersonal(root) {
+      var ed = editStaffId ? state.staff.find(function (s) { return s.id === editStaffId; }) : null;
+      root.innerHTML = '<div class="grid grid-split">' +
+        '<div class="card-gold">' +
+          '<h3 class="text-base font-bold text-gold mb-3">' + (ed ? 'Editar Personal' : 'Registrar Personal') + '</h3>' +
+          '<form data-form="staff" class="flex flex-col gap-2">' +
+            '<div><label class="lbl">Nombre Completo *</label><input type="text" id="st-nom" required value="' + esc(ed ? ed.nombre : '') + '" /></div>' +
+            '<div class="grid grid-2 gap-2">' +
+              '<div><label class="lbl">Cédula</label><input type="text" id="st-ced" value="' + esc(ed ? ed.cedula : '') + '" /></div>' +
+              '<div><label class="lbl">Cargo / Puesto *</label><input type="text" id="st-car" required value="' + esc(ed ? ed.cargo : '') + '" /></div>' +
+            '</div>' +
+            '<div class="grid grid-2 gap-2">' +
+              '<div><label class="lbl">Teléfono</label><input type="text" id="st-tel" value="' + esc(ed ? ed.telefono : '') + '" /></div>' +
+              '<div><label class="lbl">Sueldo Base RD$</label><input type="number" step="0.01" id="st-sue" value="' + (ed ? ed.sueldo : 20000) + '" /></div>' +
+            '</div>' +
+            '<div class="grid grid-2 gap-2">' +
+              '<div><label class="lbl">Horario</label><input type="text" id="st-hor" value="' + esc(ed ? ed.horario : 'Lun-Sáb 9am-6pm') + '" /></div>' +
+              '<div><label class="lbl">Estado</label><select id="st-act"><option value="1" ' + (!ed || ed.activo !== false ? 'selected' : '') + '>Activo</option><option value="0" ' + (ed && ed.activo === false ? 'selected' : '') + '>Inactivo</option></select></div>' +
+            '</div>' +
+            '<div class="flex gap-2 mt-1"><button type="submit" class="btn btn-gold flex-1">Guardar Personal</button>' +
+            (ed ? '<button type="button" data-action="staff-cancel" class="btn btn-dark">Cancelar</button>' : '') + '</div>' +
+          '</form>' +
+        '</div>' +
+
+        '<div class="card">' +
+          '<h3 class="text-base font-bold mb-3">Personal de la Barbería (' + state.staff.length + ')</h3>' +
+          '<div class="table-wrap"><table><thead><tr><th>Nombre</th><th>Cédula</th><th>Cargo</th><th>Teléfono</th><th>Estado</th><th>Sueldo Base</th><th class="text-right">Acciones</th></tr></thead><tbody>' +
+          state.staff.map(function (st) {
+            return '<tr>' +
+              '<td class="text-xs font-bold">' + esc(st.nombre) + '</td>' +
+              '<td class="text-xs text-muted">' + esc(st.cedula || '-') + '</td>' +
+              '<td class="text-xs text-gold">' + esc(st.cargo) + '</td>' +
+              '<td class="text-xs">' + esc(st.telefono || '-') + '</td>' +
+              '<td><span class="badge ' + (st.activo !== false ? 'b-green' : 'b-red') + '">' + (st.activo !== false ? 'Activo' : 'Inactivo') + '</span></td>' +
+              '<td class="text-xs font-bold">' + rd(st.sueldo) + '</td>' +
+              '<td class="text-right"><button type="button" data-action="staff-edit" data-id="' + st.id + '" class="btn btn-dark btn-xs">Editar</button> <button type="button" data-action="staff-del" data-id="' + st.id + '" class="btn btn-red btn-xs">X</button></td>' +
+            '</tr>';
+          }).join('') +
+          '</tbody></table></div>' +
+        '</div>' +
+      '</div>';
+    }
+
+    // =========================================================================
+    // 13. MODULE 10: CIERRE DE CAJA
+    // =========================================================================
+    function renderCierre(root) {
+      var dSales = state.sales.filter(function (s) { return s.fecha === cierreDate; });
+      var dAdv = state.advances.filter(function (a) { return a.fecha === cierreDate; });
+
+      var vEf = 0, vTar = 0, vTra = 0;
+      dSales.forEach(function (s) {
+        var t = Number(s.total) || 0;
+        if (s.metodoPago === 'Tarjeta') vTar += t;
+        else if (s.metodoPago === 'Transferencia') vTra += t;
+        else vEf += t;
+      });
+      var totalVendido = vEf + vTar + vTra;
+      var totalAdelantos = dAdv.reduce(function (sum, a) { return sum + (Number(a.monto) || 0); }, 0);
+      var efectivoNetoCaja = (Number(fondoInicial) || 0) + vEf - totalAdelantos;
+
+      root.innerHTML = '<div class="flex flex-col gap-4">' +
+        '<div class="card flex justify-between items-end flex-wrap gap-3">' +
+          '<div class="flex gap-3 flex-wrap">' +
+            '<div><label class="lbl">Fecha de Cierre</label><input type="date" id="cie-date" value="' + cierreDate + '" style="width:165px;" /></div>' +
+            '<div><label class="lbl">Fondo Inicial RD$</label><input type="number" step="0.01" id="cie-fondo" value="' + fondoInicial + '" style="width:165px;" /></div>' +
+          '</div>' +
+          '<button type="button" data-action="cierre-close-print" class="btn btn-gold">Cerrar Caja e Imprimir Ticket 80mm</button>' +
+        '</div>' +
+
+        '<div class="grid grid-4">' +
+          '<div class="card"><div class="text-xs uppercase text-muted font-bold">Ventas Efectivo</div><div class="text-lg font-extrabold mt-1">' + rd(vEf) + '</div></div>' +
+          '<div class="card"><div class="text-xs uppercase text-muted font-bold">Tarjeta / Transf.</div><div class="text-lg font-extrabold text-gold mt-1">' + rd(vTar + vTra) + '</div><div class="text-xs text-muted">Tarj: ' + rd(vTar) + ' | Trf: ' + rd(vTra) + '</div></div>' +
+          '<div class="card"><div class="text-xs uppercase text-muted font-bold">Adelantos Sueldo</div><div class="text-lg font-extrabold text-amber mt-1">-' + rd(totalAdelantos) + '</div><div class="text-xs text-muted">' + dAdv.length + ' adelantos entregados</div></div>' +
+          '<div class="card-gold"><div class="text-xs uppercase text-muted font-bold">Efectivo Neto en Caja</div><div class="text-lg font-extrabold text-green mt-1">' + rd(efectivoNetoCaja) + '</div><div class="text-xs text-muted">Total vendido: ' + rd(totalVendido) + '</div></div>' +
+        '</div>' +
+
+        '<div class="card">' +
+          '<h4 class="text-sm font-bold text-gold mb-2">Desglose Detallado de Adelantos de Sueldo del Día (' + cierreDate + ')</h4>' +
+          (dAdv.length === 0 ? '<p class="text-xs text-muted">No se entregaron adelantos de sueldo en esta fecha.</p>' :
+          '<div class="table-wrap"><table><thead><tr><th>Ref</th><th>Barbero</th><th>Concepto</th><th class="text-right">Monto Deducido</th></tr></thead><tbody>' +
+          dAdv.map(function (a) {
+            return '<tr><td class="mono text-xs text-gold">' + esc(a.id) + '</td><td class="text-xs font-bold">' + esc(a.barberoNombre) + '</td><td class="text-xs text-muted">' + esc(a.motivo) + '</td><td class="text-right text-xs font-bold text-amber">-' + rd(a.monto) + '</td></tr>';
+          }).join('') +
+          '</tbody></table></div>') +
+        '</div>' +
+      '</div>';
+    }
+
+    // =========================================================================
+    // 14. MODULE 11: CONFIGURACIÓN (TICKET 80MM/58MM & FIREBASE CLOUD)
+    // =========================================================================
+    function renderConfiguracion(root) {
+      var r = state.receipt;
+      var c = state.cloud;
+
+      var tab1 = '<div class="grid grid-split-wide">' +
+        '<div class="card-gold">' +
+          '<h3 class="text-base font-bold text-gold mb-3">Configuración de Ticket (80mm / 58mm)</h3>' +
+          '<form data-form="ticket-cfg" class="flex flex-col gap-2">' +
+            '<div class="subcard flex justify-between items-center">' +
+              '<span class="text-xs font-bold">Logotipo Térmico Alto Contraste</span>' +
+              '<div class="flex gap-1">' +
+                '<label class="btn btn-out-gold btn-xs" style="cursor:pointer;">Subir Logo<input type="file" id="cfg-logo-file" accept="image/*" class="hidden" /></label>' +
+                (r.customLogo ? '<button type="button" data-action="cfg-logo-reset" class="btn btn-dark btn-xs">Restaurar Oficial</button>' : '') +
+              '</div>' +
+            '</div>' +
+            '<div class="grid grid-2 gap-2">' +
+              '<div><label class="lbl">Nombre del Negocio *</label><input type="text" id="cfg-nom" required value="' + esc(r.nombreNegocio) + '" /></div>' +
+              '<div><label class="lbl">Eslogan</label><input type="text" id="cfg-esl" value="' + esc(r.eslogan) + '" /></div>' +
+            '</div>' +
+            '<div class="grid grid-2 gap-2">' +
+              '<div><label class="lbl">Dirección *</label><input type="text" id="cfg-dir" required value="' + esc(r.direccion) + '" /></div>' +
+              '<div><label class="lbl">Teléfono *</label><input type="text" id="cfg-tel" required value="' + esc(r.telefono) + '" /></div>' +
+            '</div>' +
+            '<div class="grid grid-3 gap-2">' +
+              '<div><label class="lbl">Horario</label><input type="text" id="cfg-hor" value="' + esc(r.horario) + '" /></div>' +
+              '<div><label class="lbl">Ancho Papel</label><select id="cfg-anc"><option value="80mm" ' + (r.anchoPapel !== '58mm' ? 'selected' : '') + '>80mm</option><option value="58mm" ' + (r.anchoPapel === '58mm' ? 'selected' : '') + '>58mm</option></select></div>' +
+              '<div><label class="lbl">Tamaño Letra</label><select id="cfg-fs"><option value="11px" ' + (r.fontSize === '11px' ? 'selected' : '') + '>Compacto</option><option value="12px" ' + (r.fontSize === '12px' ? 'selected' : '') + '>Normal</option><option value="13px" ' + (r.fontSize === '13px' ? 'selected' : '') + '>Grande</option></select></div>' +
+            '</div>' +
+            '<div class="grid grid-2 gap-2">' +
+              '<div><label class="lbl">Mensaje Pie 1 *</label><input type="text" id="cfg-msg1" required value="' + esc(r.mensajeFinal) + '" /></div>' +
+              '<div><label class="lbl">Mensaje Pie 2</label><input type="text" id="cfg-msg2" value="' + esc(r.notaInferior) + '" /></div>' +
+            '</div>' +
+            '<div class="flex gap-4 mt-1">' +
+              '<label class="text-xs flex items-center gap-1"><input type="checkbox" id="cfg-show-logo" ' + (r.mostrarLogo !== false ? 'checked' : '') + ' /> Mostrar Logotipo</label>' +
+              '<label class="text-xs flex items-center gap-1"><input type="checkbox" id="cfg-show-hor" ' + (r.mostrarHorario !== false ? 'checked' : '') + ' /> Mostrar Horario</label>' +
+            '</div>' +
+            '<div class="grid grid-2 gap-2 mt-2">' +
+              '<button type="submit" class="btn btn-gold w-full">Guardar Configuración</button>' +
+              '<button type="button" data-action="cfg-test-print" class="btn btn-out-gold w-full">Imprimir Ticket de Prueba</button>' +
+            '</div>' +
+          '</form>' +
+        '</div>' +
+
+        '<div class="card flex flex-col items-center">' +
+          '<div class="w-full flex justify-between items-center mb-2"><h4 class="text-sm font-bold">Vista Previa Ticket</h4><span class="badge b-gold">Sin RNC • Le Atendió:</span></div>' +
+          '<div style="background:#e5e7eb;padding:14px;border-radius:12px;width:100%;display:flex;justify-content:center;overflow-x:auto;">' +
+            '<div id="cfg-preview-ticket" style="background:#fff;color:#000;width:' + (r.anchoPapel === '58mm' ? '220px' : '302px') + ';padding:14px;font-family:\'Courier New\',monospace;font-size:' + (r.fontSize || '12px') + ';"></div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+      var tab2 = '<div class="card-gold">' +
+        '<div class="flex justify-between items-center flex-wrap gap-2 mb-2">' +
+          '<h3 class="serif text-lg font-extrabold text-gold">&#9729; Sincronización Automática en Tiempo Real</h3>' +
+          '<span class="badge ' + (cloudConnected ? 'b-green' : 'b-amber') + '">' + (cloudConnected ? '&#9729; Conectado (' + DEFAULT_FB.projectId + ')' : '&#9729; Modo Local') + '</span>' +
+        '</div>' +
+        '<p class="text-xs text-muted mb-3">Tu sistema está enlazado automáticamente a Firebase Firestore (<b>' + DEFAULT_FB.projectId + '</b>). Cada venta, producto, cliente o movimiento se sincroniza en vivo entre PC y celular.</p>' +
+        '<div class="grid grid-2 gap-2 mb-3">' +
+          '<button type="button" data-action="fb-force-push" class="btn btn-gold w-full">&#128260; Forzar Subida a la Nube Ahora</button>' +
+          '<button type="button" data-action="fb-force-pull" class="btn btn-out-gold w-full">&#9729; Descargar Últimos Datos de la Nube</button>' +
+        '</div>' +
+        (c.lastSync ? '<p class="text-xs text-muted text-center mb-3">Última sincronización: <b class="text-gold">' + esc(c.lastSync) + '</b></p>' : '') +
+        '<div class="pt-3 flex justify-between items-center flex-wrap gap-2" style="border-top:1px solid var(--border);">' +
+          '<span class="text-xs text-muted">Respaldo Local (.JSON):</span>' +
+          '<div class="flex gap-2">' +
+            '<button type="button" data-action="json-export" class="btn btn-dark btn-xs">Exportar Respaldo .JSON</button>' +
+            '<label class="btn btn-out-gold btn-xs" style="cursor:pointer;">Importar .JSON<input type="file" id="json-import-file" accept=".json,application/json" class="hidden" /></label>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+      root.innerHTML = '<div class="flex flex-col gap-3">' +
+        '<div class="card p-2 flex gap-2">' +
+          '<button type="button" data-action="cfg-tab" data-tab="ticket" class="btn btn-sm ' + (cfgTab === 'ticket' ? 'btn-gold' : 'btn-dark') + '">Configuración de Ticket (80mm / 58mm)</button>' +
+          '<button type="button" data-action="cfg-tab" data-tab="nube" class="btn btn-sm ' + (cfgTab === 'nube' ? 'btn-gold' : 'btn-dark') + '">Servidor Nube (Firebase)</button>' +
+        '</div>' +
+        (cfgTab === 'nube' ? tab2 : tab1) +
+      '</div>';
+
+      if (cfgTab === 'ticket') updateCfgLivePreview();
+    }
+
+    function updateCfgLivePreview() {
+      var box = document.getElementById('cfg-preview-ticket');
+      if (!box) return;
+      var r = state.receipt;
+      box.style.width = r.anchoPapel === '58mm' ? '220px' : '302px';
+      box.style.fontSize = r.fontSize || '12px';
+      box.innerHTML = buildSaleTicketHtml({
+        id: 'GL-1005',
+        fecha: TODAY,
+        hora: '14:30',
+        clienteNombre: 'Roberto Gómez',
+        barberoNombre: 'Carlos Mendoza',
+        metodoPago: 'Efectivo',
+        items: [{ nombre: 'Combo Gold Label VIP', cantidad: 1, precio: 1000 }],
+        total: 1000
+      }, 'cfg-live', r);
+    }
+
+    // =========================================================================
+    // 15. MODULE 12: CONTROL DE USUARIO
+    // =========================================================================
+    function renderUsuarios(root) {
+      var ed = editUserId ? state.users.find(function (u) { return u.id === editUserId; }) : null;
+      root.innerHTML = '<div class="grid grid-split">' +
+        '<div class="card-gold">' +
+          '<h3 class="text-base font-bold text-gold mb-3">' + (ed ? 'Editar Usuario' : 'Nuevo Usuario del Sistema') + '</h3>' +
+          '<form data-form="user" class="flex flex-col gap-2">' +
+            '<div><label class="lbl">Nombre Completo *</label><input type="text" id="us-nom" required value="' + esc(ed ? ed.nombre : '') + '" /></div>' +
+            '<div class="grid grid-2 gap-2">' +
+              '<div><label class="lbl">Usuario *</label><input type="text" id="us-usr" required value="' + esc(ed ? ed.username : '') + '" /></div>' +
+              '<div><label class="lbl">Contraseña *</label><input type="text" id="us-pwd" required value="' + esc(ed ? ed.password : '') + '" /></div>' +
+            '</div>' +
+            '<div><label class="lbl">Rol</label><select id="us-rol">' +
+              ['Administrador', 'Recepción', 'Barbero'].map(function (rl) {
+                return '<option value="' + rl + '" ' + (ed && ed.rol === rl ? 'selected' : '') + '>' + rl + '</option>';
+              }).join('') +
+            '</select></div>' +
+            '<div><label class="lbl">Permisos por Módulo (Ventas POS siempre activo)</label>' +
+              '<div class="grid grid-2 gap-1">' +
+                MODULES.map(function (m) {
+                  var locked = m.id === 'ventas';
+                  var checked = locked || (ed ? (ed.modulos || []).indexOf(m.id) !== -1 : true);
+                  return '<label class="subcard flex items-center gap-2 p-2 text-xs"><input type="checkbox" name="us-mod" value="' + m.id + '" ' + (checked ? 'checked' : '') + ' ' + (locked ? 'disabled' : '') + ' /><span class="truncate">' + esc(m.label) + '</span></label>';
+                }).join('') +
+              '</div>' +
+            '</div>' +
+            '<div class="flex gap-2 mt-2"><button type="submit" class="btn btn-gold flex-1">Guardar Usuario</button>' +
+            (ed ? '<button type="button" data-action="user-cancel" class="btn btn-dark">Cancelar</button>' : '') + '</div>' +
+          '</form>' +
+        '</div>' +
+
+        '<div class="card">' +
+          '<h3 class="text-base font-bold mb-3">Usuarios Registrados (' + state.users.length + ')</h3>' +
+          '<div class="flex flex-col gap-2">' +
+            state.users.map(function (u) {
+              return '<div class="subcard flex justify-between items-center gap-2 flex-wrap">' +
+                '<div><b class="text-sm">' + esc(u.nombre) + '</b> <span class="badge b-gold">' + esc(u.rol) + '</span>' +
+                '<div class="text-xs text-muted mt-1">Usuario: <b>' + esc(u.username) + '</b> | Contraseña: <b>' + esc(u.password) + '</b> | Módulos: <b>' + (u.modulos || []).length + '</b></div></div>' +
+                '<div class="flex gap-1">' +
+                  '<button type="button" data-action="user-edit" data-id="' + u.id + '" class="btn btn-dark btn-xs">Editar</button>' +
+                  (u.username !== 'admin' ? '<button type="button" data-action="user-del" data-id="' + u.id + '" class="btn btn-red btn-xs">X</button>' : '') +
+                '</div>' +
+              '</div>';
+            }).join('') +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }
+
+    // =========================================================================
+    // 16. DIRECT THERMAL PRINT ENGINE (NO INTERMEDIATE MODALS, NO RNC)
+    // =========================================================================
+    function ticketHeaderHtml(uid, r) {
+      var logoBlock = '';
+      if (r.mostrarLogo !== false) {
+        logoBlock = r.customLogo
+          ? '<img src="' + r.customLogo + '" style="width:68px;height:68px;object-fit:contain;margin:0 auto 6px auto;display:block;" />'
+          : '<div style="width:68px;height:68px;margin:0 auto 6px auto;">' + barberLogoSVG(uid, true) + '</div>';
+      }
+      return '<div style="text-align:center;margin-bottom:8px;">' +
+        logoBlock +
+        '<div style="font-weight:900;font-size:1.18em;">' + esc(r.nombreNegocio) + '</div>' +
+        (r.eslogan ? '<div style="font-size:0.88em;font-weight:700;">' + esc(r.eslogan) + '</div>' : '') +
+        '<div style="font-size:0.88em;">' + esc(r.direccion) + '</div>' +
+        '<div style="font-size:0.88em;">Tel: ' + esc(r.telefono) + '</div>' +
+        (r.mostrarHorario !== false && r.horario ? '<div style="font-size:0.85em;">' + esc(r.horario) + '</div>' : '') +
+      '</div>';
+    }
+
+    function buildSaleTicketHtml(sale, uid, r) {
+      return ticketHeaderHtml(uid, r) +
+        '<div style="border-top:1px dashed #000;border-bottom:1px dashed #000;padding:6px 0;margin:6px 0;font-size:0.92em;">' +
+          '<div style="display:flex;justify-content:space-between;"><span><b>TICKET:</b> ' + esc(sale.id) + '</span><span>' + esc(sale.fecha) + ' ' + esc(sale.hora || '') + '</span></div>' +
+          '<div><b>CLIENTE:</b> ' + esc(sale.clienteNombre) + '</div>' +
+          '<div><b>Le Atendió:</b> ' + esc(sale.barberoNombre) + '</div>' +
+          '<div><b>PAGO:</b> ' + esc(sale.metodoPago) + '</div>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;font-weight:700;font-size:0.88em;border-bottom:1px solid #000;padding-bottom:3px;margin-bottom:5px;"><span>DESCRIPCIÓN</span><span>IMPORTE</span></div>' +
+        (sale.items || []).map(function (it) {
+          var sub = (Number(it.precio) || 0) * (Number(it.cantidad) || 1);
+          return '<div style="margin-bottom:5px;"><div style="font-weight:700;">' + esc(it.nombre) + '</div>' +
+            '<div style="display:flex;justify-content:space-between;font-size:0.92em;"><span>' + it.cantidad + ' x ' + rd(it.precio) + '</span><b>' + rd(sub) + '</b></div></div>';
+        }).join('') +
+        '<div style="border-top:2px solid #000;padding-top:6px;margin-top:6px;display:flex;justify-content:space-between;font-weight:900;font-size:1.12em;"><span>TOTAL PAGADO:</span><span>' + rd(sale.total) + '</span></div>' +
+        '<div style="text-align:center;margin-top:10px;border-top:1px dashed #000;padding-top:6px;">' +
+          '<div style="font-weight:700;">' + esc(r.mensajeFinal) + '</div>' +
+          (r.notaInferior ? '<div style="font-size:0.86em;">' + esc(r.notaInferior) + '</div>' : '') +
+        '</div>';
+    }
+
+    function directThermalPrint(innerHtml) {
+      var r = state.receipt;
+      document.documentElement.style.setProperty('--ticket-w', r.anchoPapel === '58mm' ? '58mm' : '80mm');
+      document.documentElement.style.setProperty('--ticket-fs', r.fontSize || '12px');
+      var area = document.getElementById('print-area');
+      area.innerHTML = innerHtml;
+      setTimeout(function () { window.print(); }, 60);
+    }
+
+    function printSaleDirect(saleId) {
+      var s = state.sales.find(function (x) { return x.id === saleId; });
+      if (!s) return;
+      directThermalPrint(buildSaleTicketHtml(s, 'sale-pr', state.receipt));
+    }
+
+    function printAdvanceDirect(advId) {
+      var a = state.advances.find(function (x) { return x.id === advId; });
+      if (!a) return;
+      var r = state.receipt;
+      var html = ticketHeaderHtml('adv-pr', r) +
+        '<div style="text-align:center;font-weight:900;border-top:1px dashed #000;border-bottom:1px dashed #000;padding:5px 0;margin:6px 0;">COMPROBANTE ADELANTO DE SUELDO</div>' +
+        '<div style="font-size:0.92em;">' +
+          '<div><b>REF:</b> ' + esc(a.id) + ' &bull; ' + esc(a.fecha) + ' ' + esc(a.hora || '') + '</div>' +
+          '<div><b>BARBERO:</b> ' + esc(a.barberoNombre) + '</div>' +
+          '<div><b>CÉDULA:</b> ' + esc(a.barberoCedula || 'N/A') + '</div>' +
+          '<div><b>CONCEPTO:</b> ' + esc(a.motivo) + '</div>' +
+        '</div>' +
+        '<div style="border-top:2px solid #000;border-bottom:2px solid #000;padding:6px 0;margin:8px 0;display:flex;justify-content:space-between;font-weight:900;font-size:1.12em;"><span>MONTO ENTREGADO:</span><span>' + rd(a.monto) + '</span></div>' +
+        '<p style="font-size:0.86em;text-align:justify;margin-bottom:24px;">Declaro haber recibido conforme la suma indicada arriba en calidad de adelanto de sueldo/comisión, autorizando su deducción en mi liquidación correspondiente.</p>' +
+        '<div style="margin-top:22px;text-align:center;"><div style="border-top:1px solid #000;width:85%;margin:0 auto 3px auto;"></div><b>Firma del Barbero</b><div style="font-size:0.85em;">' + esc(a.barberoNombre) + '</div></div>' +
+        '<div style="margin-top:22px;text-align:center;"><div style="border-top:1px solid #000;width:85%;margin:0 auto 3px auto;"></div><b>Firma Administración / Caja</b></div>';
+      directThermalPrint(html);
+    }
+
+    function printBarberReportDirect(barberId) {
+      var b = state.barbers.find(function (x) { return x.id === barberId; });
+      if (!b) return;
+      var r = state.receipt;
+      var bSales = state.sales.filter(function (s) { return s.barberoId === b.id && s.fecha === barbRepDate; });
+      var bAdv = state.advances.filter(function (a) { return a.barberoId === b.id && a.fecha === barbRepDate; });
+      var totV = 0;
+      var lines = '';
+      bSales.forEach(function (s) {
+        totV += Number(s.total) || 0;
+        (s.items || []).forEach(function (it) {
+          lines += '<div style="display:flex;justify-content:space-between;font-size:0.9em;margin-bottom:3px;"><span>' + it.cantidad + 'x ' + esc(it.nombre) + '</span><b>' + rd(it.precio * it.cantidad) + '</b></div>';
+        });
+      });
+      var comRD = totV * ((Number(b.comision) || 0) / 100);
+      var advRD = bAdv.reduce(function (sum, a) { return sum + (Number(a.monto) || 0); }, 0);
+      var neto = comRD - advRD;
+
+      var html = ticketHeaderHtml('brep-pr', r) +
+        '<div style="text-align:center;font-weight:900;border-top:1px dashed #000;border-bottom:1px dashed #000;padding:5px 0;margin:6px 0;">LIQUIDACIÓN INDIVIDUAL BARBERO</div>' +
+        '<div style="font-size:0.92em;margin-bottom:6px;">' +
+          '<div><b>FECHA REPORTE:</b> ' + esc(barbRepDate) + '</div>' +
+          '<div><b>BARBERO:</b> ' + esc(b.nombre) + '</div>' +
+          '<div><b>CÉDULA:</b> ' + esc(b.cedula || 'N/A') + '</div>' +
+        '</div>' +
+        '<div style="font-weight:700;border-bottom:1px solid #000;padding-bottom:2px;margin-bottom:4px;font-size:0.88em;">DETALLE DE SERVICIOS / VENTAS</div>' +
+        (lines || '<div style="font-size:0.9em;">Sin servicios registrados en esta fecha.</div>') +
+        '<div style="border-top:1px dashed #000;padding-top:5px;margin-top:6px;font-size:0.94em;">' +
+          '<div style="display:flex;justify-content:space-between;"><span>Total Generado:</span><b>' + rd(totV) + '</b></div>' +
+          '<div style="display:flex;justify-content:space-between;"><span>Comisión (' + b.comision + '%):</span><b>' + rd(comRD) + '</b></div>' +
+          '<div style="display:flex;justify-content:space-between;"><span>Adelantos Fecha:</span><b>-' + rd(advRD) + '</b></div>' +
+        '</div>' +
+        '<div style="border-top:2px solid #000;padding-top:6px;margin-top:6px;display:flex;justify-content:space-between;font-weight:900;font-size:1.12em;"><span>NETO A PAGAR:</span><span>' + rd(neto) + '</span></div>' +
+        '<div style="margin-top:24px;text-align:center;"><div style="border-top:1px solid #000;width:85%;margin:0 auto 3px auto;"></div><b>Firma Conforme Barbero</b></div>' +
+        '<div style="margin-top:20px;text-align:center;"><div style="border-top:1px solid #000;width:85%;margin:0 auto 3px auto;"></div><b>Firma Administración</b></div>';
+      directThermalPrint(html);
+    }
+
+    function printCierreDirect() {
+      var r = state.receipt;
+      var dSales = state.sales.filter(function (s) { return s.fecha === cierreDate; });
+      var dAdv = state.advances.filter(function (a) { return a.fecha === cierreDate; });
+      var vEf = 0, vTar = 0, vTra = 0;
+      dSales.forEach(function (s) {
+        var t = Number(s.total) || 0;
+        if (s.metodoPago === 'Tarjeta') vTar += t;
+        else if (s.metodoPago === 'Transferencia') vTra += t;
+        else vEf += t;
+      });
+      var totV = vEf + vTar + vTra;
+      var totA = dAdv.reduce(function (sum, a) { return sum + (Number(a.monto) || 0); }, 0);
+      var netoCaja = (Number(fondoInicial) || 0) + vEf - totA;
+
+      state.closings.unshift({ id: 'CI-' + (100 + state.closings.length + 1), fecha: cierreDate, totalVendido: totV, adelantos: totA, efectivoNeto: netoCaja });
+      saveState();
+
+      var advLines = dAdv.map(function (a) {
+        return '<div style="display:flex;justify-content:space-between;font-size:0.88em;"><span>- ' + esc(a.barberoNombre) + '</span><span>-' + rd(a.monto) + '</span></div>';
+      }).join('');
+
+      var html = ticketHeaderHtml('cie-pr', r) +
+        '<div style="text-align:center;font-weight:900;border-top:1px dashed #000;border-bottom:1px dashed #000;padding:5px 0;margin:6px 0;">REPORTE DE CIERRE DE CAJA</div>' +
+        '<div style="font-size:0.92em;margin-bottom:6px;">' +
+          '<div><b>FECHA CIERRE:</b> ' + esc(cierreDate) + '</div>' +
+          '<div><b>CAJERO:</b> ' + esc(currentUser ? currentUser.nombre : 'Admin') + '</div>' +
+          '<div><b>TICKETS EMITIDOS:</b> ' + dSales.length + '</div>' +
+        '</div>' +
+        '<div style="border-top:1px dashed #000;padding-top:5px;font-size:0.94em;">' +
+          '<div style="display:flex;justify-content:space-between;"><span>Fondo Inicial:</span><b>' + rd(fondoInicial) + '</b></div>' +
+          '<div style="display:flex;justify-content:space-between;"><span>Ventas Efectivo:</span><b>' + rd(vEf) + '</b></div>' +
+          '<div style="display:flex;justify-content:space-between;"><span>Ventas Tarjeta:</span><b>' + rd(vTar) + '</b></div>' +
+          '<div style="display:flex;justify-content:space-between;"><span>Transferencias:</span><b>' + rd(vTra) + '</b></div>' +
+          '<div style="display:flex;justify-content:space-between;border-top:1px solid #000;margin-top:4px;padding-top:4px;"><span>TOTAL VENDIDO:</span><b>' + rd(totV) + '</b></div>' +
+        '</div>' +
+        '<div style="border-top:1px dashed #000;padding-top:5px;margin-top:6px;">' +
+          '<div style="font-weight:700;font-size:0.9em;">ADELANTOS DE SUELDO (' + rd(totA) + ')</div>' +
+          (advLines || '<div style="font-size:0.86em;">Sin adelantos en esta fecha</div>') +
+        '</div>' +
+        '<div style="border-top:2px solid #000;padding-top:6px;margin-top:8px;display:flex;justify-content:space-between;font-weight:900;font-size:1.1em;"><span>EFECTIVO EN CAJA:</span><span>' + rd(netoCaja) + '</span></div>' +
+        '<div style="margin-top:24px;text-align:center;"><div style="border-top:1px solid #000;width:85%;margin:0 auto 3px auto;"></div><b>Firma Responsable de Caja</b></div>';
+      directThermalPrint(html);
+    }
+
+    // =========================================================================
+    // 17. FIREBASE CLOUD STATUS PILL & REAL-TIME LISTENER
+    // =========================================================================
+    function updateCloudPill() {
+      var pill = document.getElementById('cloud-status-pill');
+      if (!pill) return;
+      if (db && cloudConnected) {
+        pill.className = 'badge b-green';
+        pill.innerHTML = '&#9729; Nube Sincronizada (' + DEFAULT_FB.projectId + ')';
+      } else if (db) {
+        pill.className = 'badge b-amber';
+        pill.innerHTML = '&#9729; Conectando Nube...';
+      } else {
+        pill.className = 'badge b-dim';
+        pill.innerHTML = '&#9729; Modo Local';
+      }
+    }
+
+    function startRealtimeCloudSync() {
+      if (!db) return;
+      db.collection("gold_label_barber").doc("main_data").onSnapshot(function (doc) {
+        cloudConnected = true;
+        updateCloudPill();
+        if (!doc.exists) {
+          pushStateToFirebase();
+          return;
+        }
+        var data = doc.data();
+        if (!data || !data.payloadJson) return;
+        if (data.updatedAt && data.updatedAt === lastCloudUpdatedAt) return;
+        try {
+          var remoteState = JSON.parse(data.payloadJson);
+          isApplyingRemote = true;
+          state = Object.assign(defaultState(), remoteState);
+          state.receipt = Object.assign(defaultState().receipt, remoteState.receipt || {});
+          state.cloud = Object.assign(defaultState().cloud, remoteState.cloud || {});
+          lastCloudUpdatedAt = data.updatedAt || '';
+          safeSet(STORAGE_KEY, JSON.stringify(state));
+          if (currentUser) {
+            renderActiveModule();
+          }
+          isApplyingRemote = false;
+        } catch (err) {
+          isApplyingRemote = false;
+          console.error("Error procesando sincronización entrante:", err);
+        }
+      }, function (err) {
+        console.error("Error en listener de Firestore:", err);
+      });
+    }
+
+    // =========================================================================
+    // 18. CENTRALIZED DOCUMENT EVENT DELEGATION (CLICK, SUBMIT, INPUT, CHANGE)
+    // =========================================================================
+    document.addEventListener('click', function (e) {
+      var navEl = e.target.closest('[data-nav]');
+      if (navEl) {
+        e.preventDefault();
+        window.navigateTo(navEl.getAttribute('data-nav'));
+        return;
+      }
+
+      var actEl = e.target.closest('[data-action]');
+      if (!actEl) return;
+      var act = actEl.getAttribute('data-action');
+      var id = actEl.getAttribute('data-id');
+
+      if (act === 'toggle-sidebar') { window.toggleSidebar(); return; }
+      if (act === 'logout') { window.logoutUser(); return; }
+
+      // POS Actions
+      if (act === 'pos-tab') { posTab = actEl.getAttribute('data-tab'); renderActiveModule(); return; }
+      if (act === 'pos-cat') { posCategory = id; renderActiveModule(); return; }
+      if (act === 'pos-pay') { posPayMethod = actEl.getAttribute('data-pay'); renderActiveModule(); return; }
+      if (act === 'cart-clear') { posCart = []; renderActiveModule(); return; }
+      if (act === 'cart-add') {
+        var tipo = actEl.getAttribute('data-tipo');
+        if (tipo === 'servicio') {
+          var s = state.services.find(function (x) { return x.id === id; });
+          if (!s) return;
+          var exS = posCart.find(function (x) { return x.tipo === 'servicio' && x.id === id; });
+          if (exS) exS.cantidad++;
+          else posCart.push({ tipo: 'servicio', id: s.id, nombre: s.nombre, precio: Number(s.precio) || 0, cantidad: 1 });
+        } else {
+          var p = state.products.find(function (x) { return x.id === id; });
+          if (!p || p.stock <= 0) return;
+          var exP = posCart.find(function (x) { return x.tipo === 'producto' && x.id === id; });
+          if (exP) {
+            if (exP.cantidad >= p.stock) { toast('Stock máximo alcanzado.', 'amber'); return; }
+            exP.cantidad++;
+          } else {
+            posCart.push({ tipo: 'producto', id: p.id, nombre: p.nombre, precio: Number(p.precio) || 0, cantidad: 1 });
+          }
+        }
+        renderActiveModule();
+        return;
+      }
+      if (act === 'cart-qty') {
+        var idx = parseInt(actEl.getAttribute('data-idx'), 10);
+        var delta = parseInt(actEl.getAttribute('data-delta'), 10);
+        var item = posCart[idx];
+        if (!item) return;
+        if (delta > 0 && item.tipo === 'producto') {
+          var prod = state.products.find(function (x) { return x.id === item.id; });
+          if (prod && item.cantidad + delta > prod.stock) { toast('No hay más stock disponible.', 'amber'); return; }
+        }
+        item.cantidad += delta;
+        if (item.cantidad <= 0) posCart.splice(idx, 1);
+        renderActiveModule();
+        return;
+      }
+      if (act === 'cart-del') {
+        posCart.splice(parseInt(actEl.getAttribute('data-idx'), 10), 1);
+        renderActiveModule();
+        return;
+      }
+      if (act === 'pos-checkout') {
+        if (posCart.length === 0) { toast('Agrega al menos un servicio o producto.', 'amber'); return; }
+        var bSel = document.getElementById('pos-barber');
+        var bObj = state.barbers.find(function (b) { return b.id === (bSel ? bSel.value : posBarberId); });
+        var cWalk = (document.getElementById('pos-client-txt') ? document.getElementById('pos-client-txt').value.trim() : '');
+        var cSel = (document.getElementById('pos-client-sel') ? document.getElementById('pos-client-sel').value : '');
+        var clientName = cWalk || cSel || 'Cliente de paso';
+        var totalSale = posCart.reduce(function (sum, it) { return sum + (it.precio * it.cantidad); }, 0);
+
+        posCart.forEach(function (it) {
+          if (it.tipo === 'producto') {
+            var pr = state.products.find(function (x) { return x.id === it.id; });
+            if (pr) pr.stock = Math.max(0, pr.stock - it.cantidad);
+          }
+        });
+
+        var now = new Date();
+        var hora = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+        var saleId = 'GL-' + (1001 + state.sales.length);
+        state.sales.unshift({
+          id: saleId,
+          fecha: TODAY,
+          hora: hora,
+          barberoId: bObj ? bObj.id : '',
+          barberoNombre: bObj ? bObj.nombre : 'Barbero',
+          clienteNombre: clientName,
+          metodoPago: posPayMethod,
+          items: JSON.parse(JSON.stringify(posCart)),
+          total: totalSale
+        });
+        posCart = [];
+        posClientWalkin = '';
+        posCashReceived = '';
+        saveState();
+        renderActiveModule();
+        toast('Venta cobrada: ' + rd(totalSale), 'green');
+        printSaleDirect(saleId);
+        return;
+      }
+
+      // Clientes Actions
+      if (act === 'client-edit') { editClientId = id; renderActiveModule(); return; }
+      if (act === 'client-cancel') { editClientId = null; renderActiveModule(); return; }
+      if (act === 'client-del') { state.clients = state.clients.filter(function (c) { return c.id !== id; }); saveState(); renderActiveModule(); return; }
+
+      // Productos & Categorías Actions
+      if (act === 'cat-edit') { editCatId = id; renderActiveModule(); return; }
+      if (act === 'cat-cancel') { editCatId = null; renderActiveModule(); return; }
+      if (act === 'cat-del') { state.productCategories = state.productCategories.filter(function (c) { return c.id !== id; }); saveState(); renderActiveModule(); return; }
+      if (act === 'prod-edit') { editProdId = id; tempProdImg = ''; renderActiveModule(); return; }
+      if (act === 'prod-cancel') { editProdId = null; tempProdImg = ''; renderActiveModule(); return; }
+      if (act === 'prod-clear-img') {
+        tempProdImg = '';
+        if (editProdId) { var ep = state.products.find(function (x) { return x.id === editProdId; }); if (ep) ep.imagen = ''; }
+        renderActiveModule();
+        return;
+      }
+      if (act === 'prod-del') { state.products = state.products.filter(function (p) { return p.id !== id; }); saveState(); renderActiveModule(); return; }
+      if (act === 'prod-stock') {
+        var pr = state.products.find(function (p) { return p.id === id; });
+        var dlt = parseInt(actEl.getAttribute('data-delta'), 10);
+        if (pr) { pr.stock = Math.max(0, pr.stock + dlt); saveState(); renderActiveModule(); toast('Stock actualizado: ' + pr.stock + ' uds', 'green'); }
+        return;
+      }
+      if (act === 'prod-batch-toggle') { batchProdId = batchProdId === id ? null : id; renderActiveModule(); return; }
+      if (act === 'prod-batch-apply') {
+        var prB = state.products.find(function (p) { return p.id === id; });
+        var inpB = document.getElementById('batch-inp-' + id);
+        var valB = inpB ? parseInt(inpB.value, 10) : 0;
+        if (prB && !isNaN(valB)) { prB.stock = Math.max(0, prB.stock + valB); batchProdId = null; saveState(); renderActiveModule(); toast('Stock actualizado.', 'green'); }
+        return;
+      }
+
+      // Servicios Actions
+      if (act === 'serv-edit') { editServId = id; tempServImg = ''; renderActiveModule(); return; }
+      if (act === 'serv-cancel') { editServId = null; tempServImg = ''; renderActiveModule(); return; }
+      if (act === 'serv-clear-img') {
+        tempServImg = '';
+        if (editServId) { var es = state.services.find(function (x) { return x.id === editServId; }); if (es) es.imagen = ''; }
+        renderActiveModule();
+        return;
+      }
+      if (act === 'serv-del') { state.services = state.services.filter(function (s) { return s.id !== id; }); saveState(); renderActiveModule(); return; }
+
+      // Reportes Actions
+      if (act === 'print-sale') { printSaleDirect(id); return; }
+      if (act === 'rep-csv') {
+        var rows = state.sales.filter(function (s) {
+          return (!repFrom || s.fecha >= repFrom) && (!repTo || s.fecha <= repTo) && (repPay === 'Todos' || s.metodoPago === repPay);
+        });
+        var csv = 'Ticket,Fecha,Hora,Cliente,Barbero,Pago,Total\n' + rows.map(function (s) {
+          return [s.id, s.fecha, s.hora, '"' + s.clienteNombre + '"', '"' + s.barberoNombre + '"', s.metodoPago, s.total].join(',');
+        }).join('\n');
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+        a.download = 'Reportes_GoldLabel_' + repFrom + '_' + repTo + '.csv';
+        a.click();
+        return;
+      }
+
+      // Barberos & Adelantos Actions
+      if (act === 'barb-edit') { editBarberId = id; renderActiveModule(); return; }
+      if (act === 'barb-cancel') { editBarberId = null; renderActiveModule(); return; }
+      if (act === 'barb-del') { state.barbers = state.barbers.filter(function (b) { return b.id !== id; }); saveState(); renderActiveModule(); return; }
+      if (act === 'barb-preset-adv') { advBarberPreset = id; renderActiveModule(); var mInp = document.getElementById('ad-monto'); if (mInp) mInp.focus(); return; }
+      if (act === 'print-advance') { printAdvanceDirect(id); return; }
+
+      // Reporte Barberos Actions
+      if (act === 'print-barber-rep') { printBarberReportDirect(id); return; }
+
+      // Personal Actions
+      if (act === 'staff-edit') { editStaffId = id; renderActiveModule(); return; }
+      if (act === 'staff-cancel') { editStaffId = null; renderActiveModule(); return; }
+      if (act === 'staff-del') { state.staff = state.staff.filter(function (s) { return s.id !== id; }); saveState(); renderActiveModule(); return; }
+
+      // Cierre Actions
+      if (act === 'cierre-close-print') { printCierreDirect(); return; }
+
+      // Configuración Actions
+      if (act === 'cfg-tab') { cfgTab = actEl.getAttribute('data-tab'); renderActiveModule(); return; }
+      if (act === 'cfg-logo-reset') { state.receipt.customLogo = ''; saveState(); renderActiveModule(); return; }
+      if (act === 'cfg-test-print') {
+        directThermalPrint(buildSaleTicketHtml({
+          id: 'TEST-001',
+          fecha: TODAY,
+          hora: '12:00',
+          clienteNombre: 'Cliente de Prueba',
+          barberoNombre: 'Carlos Mendoza',
+          metodoPago: 'Efectivo',
+          items: [{ nombre: 'Corte Clásico / Degradado', cantidad: 1, precio: 600 }],
+          total: 600
+        }, 'test-pr', state.receipt));
+        return;
+      }
+      if (act === 'fb-force-push') {
+        pushStateToFirebase();
+        toast('Datos enviados a Firebase Firestore.', 'green');
+        return;
+      }
+      if (act === 'fb-force-pull') {
+        if (!db) { toast('Firebase no inicializado.', 'red'); return; }
+        db.collection("gold_label_barber").doc("main_data").get().then(function (doc) {
+          if (doc.exists && doc.data().payloadJson) {
+            isApplyingRemote = true;
+            var remoteState = JSON.parse(doc.data().payloadJson);
+            state = Object.assign(defaultState(), remoteState);
+            safeSet(STORAGE_KEY, JSON.stringify(state));
+            renderActiveModule();
+            isApplyingRemote = false;
+            toast('Datos descargados de la nube.', 'green');
+          } else {
+            toast('Aún no hay datos guardados en la nube.', 'amber');
+          }
+        });
+        return;
+      }
+      if (act === 'json-export') {
+        var dl = document.createElement('a');
+        dl.href = URL.createObjectURL(new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' }));
+        dl.download = 'Respaldo_GoldLabelBarber_' + TODAY + '.json';
+        dl.click();
+        return;
+      }
+
+      // Usuarios Actions
+      if (act === 'user-edit') { editUserId = id; renderActiveModule(); return; }
+      if (act === 'user-cancel') { editUserId = null; renderActiveModule(); return; }
+      if (act === 'user-del') { state.users = state.users.filter(function (u) { return u.id !== id; }); saveState(); renderActiveModule(); return; }
+    });
+
+    document.addEventListener('submit', function (e) {
+      var form = e.target;
+      var type = form.getAttribute('data-form');
+      if (!type) return;
+      e.preventDefault();
+
+      if (type === 'login') {
+        var uVal = document.getElementById('login-user').value.trim().toLowerCase();
+        var pVal = document.getElementById('login-pass').value.trim();
+        var found = state.users.find(function (u) { return u.username.toLowerCase() === uVal && u.password === pVal; });
+        var errBox = document.getElementById('login-err');
+        if (!found) {
+          errBox.classList.remove('hidden');
+          return;
+        }
+        errBox.classList.add('hidden');
+        currentUser = Object.assign({}, found, { modulos: Array.from(new Set(['ventas'].concat(found.modulos || []))) });
+        safeSet(SESSION_KEY, found.id);
+        activeModule = 'ventas';
+        syncShellVisibility();
+        toast('Bienvenido, ' + found.nombre, 'green');
+        return;
+      }
+
+      if (type === 'client') {
+        var objC = {
+          nombre: document.getElementById('cl-nom').value.trim(),
+          telefono: document.getElementById('cl-tel').value.trim(),
+          notas: document.getElementById('cl-not').value.trim()
+        };
+        if (editClientId) {
+          var ic = state.clients.findIndex(function (c) { return c.id === editClientId; });
+          if (ic >= 0) state.clients[ic] = Object.assign({}, state.clients[ic], objC);
+          editClientId = null;
+        } else {
+          state.clients.push(Object.assign({ id: 'c' + Date.now() }, objC));
+        }
+        saveState();
+        renderActiveModule();
+        toast('Cliente guardado.', 'green');
+        return;
+      }
+
+      if (type === 'category') {
+        var cNom = document.getElementById('cat-nom').value.trim();
+        if (!cNom) return;
+        if (editCatId) {
+          var icat = state.productCategories.findIndex(function (c) { return c.id === editCatId; });
+          if (icat >= 0) state.productCategories[icat].nombre = cNom;
+          editCatId = null;
+        } else {
+          state.productCategories.push({ id: 'cat' + Date.now(), nombre: cNom });
+        }
+        saveState();
+        renderActiveModule();
+        toast('Categoría guardada.', 'green');
+        return;
+      }
+
+      if (type === 'product') {
+        var edP = editProdId ? state.products.find(function (p) { return p.id === editProdId; }) : null;
+        var urlP = document.getElementById('pr-url').value.trim();
+        var imgP = tempProdImg || urlP || (edP ? (edP.imagen || '') : '');
+        var objP = {
+          nombre: document.getElementById('pr-nom').value.trim(),
+          categoryId: document.getElementById('pr-cat').value,
+          costo: parseFloat(document.getElementById('pr-cos').value) || 0,
+          precio: parseFloat(document.getElementById('pr-pre').value) || 0,
+          stock: parseInt(document.getElementById('pr-stk').value, 10) || 0,
+          imagen: imgP
+        };
+        if (editProdId) {
+          var ip = state.products.findIndex(function (p) { return p.id === editProdId; });
+          if (ip >= 0) state.products[ip] = Object.assign({}, state.products[ip], objP);
+          editProdId = null;
+        } else {
+          state.products.push(Object.assign({ id: 'p' + Date.now() }, objP));
+        }
+        tempProdImg = '';
+        saveState();
+        renderActiveModule();
+        toast('Producto guardado.', 'green');
+        return;
+      }
+
+      if (type === 'service') {
+        var edS = editServId ? state.services.find(function (s) { return s.id === editServId; }) : null;
+        var urlS = document.getElementById('sv-url').value.trim();
+        var imgS = tempServImg || urlS || (edS ? (edS.imagen || '') : '');
+        var objS = {
+          nombre: document.getElementById('sv-nom').value.trim(),
+          duracion: parseInt(document.getElementById('sv-dur').value, 10) || 30,
+          precio: parseFloat(document.getElementById('sv-pre').value) || 0,
+          descripcion: document.getElementById('sv-des').value.trim(),
+          imagen: imgS
+        };
+        if (editServId) {
+          var isv = state.services.findIndex(function (s) { return s.id === editServId; });
+          if (isv >= 0) state.services[isv] = Object.assign({}, state.services[isv], objS);
+          editServId = null;
+        } else {
+          state.services.push(Object.assign({ id: 's' + Date.now() }, objS));
+        }
+        tempServImg = '';
+        saveState();
+        renderActiveModule();
+        toast('Servicio guardado.', 'green');
+        return;
+      }
+
+      if (type === 'barber') {
+        var objB = {
+          nombre: document.getElementById('br-nom').value.trim(),
+          cedula: document.getElementById('br-ced').value.trim(),
+          telefono: document.getElementById('br-tel').value.trim(),
+          comision: parseFloat(document.getElementById('br-com').value) || 50,
+          activo: document.getElementById('br-act').value === '1'
+        };
+        if (editBarberId) {
+          var ib = state.barbers.findIndex(function (b) { return b.id === editBarberId; });
+          if (ib >= 0) state.barbers[ib] = Object.assign({}, state.barbers[ib], objB);
+          editBarberId = null;
+        } else {
+          state.barbers.push(Object.assign({ id: 'b' + Date.now() }, objB));
+        }
+        saveState();
+        renderActiveModule();
+        toast('Barbero guardado.', 'green');
+        return;
+      }
+
+      if (type === 'advance') {
+        var bId = document.getElementById('ad-barb').value;
+        var bObj = state.barbers.find(function (b) { return b.id === bId; });
+        var monto = parseFloat(document.getElementById('ad-monto').value) || 0;
+        var fecha = document.getElementById('ad-fecha').value || TODAY;
+        var motivo = document.getElementById('ad-motivo').value.trim();
+        if (monto <= 0) return;
+        var now = new Date();
+        var hora = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+        var advId = 'AD-' + (101 + state.advances.length);
+        state.advances.unshift({
+          id: advId,
+          fecha: fecha,
+          hora: hora,
+          barberoId: bId,
+          barberoNombre: bObj ? bObj.nombre : 'Barbero',
+          barberoCedula: bObj ? bObj.cedula : '',
+          monto: monto,
+          motivo: motivo
+        });
+        saveState();
+        renderActiveModule();
+        toast('Adelanto registrado.', 'green');
+        printAdvanceDirect(advId);
+        return;
+      }
+
+      if (type === 'staff') {
+        var objSt = {
+          nombre: document.getElementById('st-nom').value.trim(),
+          cedula: document.getElementById('st-ced').value.trim(),
+          cargo: document.getElementById('st-car').value.trim(),
+          telefono: document.getElementById('st-tel').value.trim(),
+          sueldo: parseFloat(document.getElementById('st-sue').value) || 0,
+          horario: document.getElementById('st-hor').value.trim(),
+          activo: document.getElementById('st-act').value === '1',
+          fechaIngreso: TODAY
+        };
+        if (editStaffId) {
+          var ist = state.staff.findIndex(function (s) { return s.id === editStaffId; });
+          if (ist >= 0) state.staff[ist] = Object.assign({}, state.staff[ist], objSt);
+          editStaffId = null;
+        } else {
+          state.staff.push(Object.assign({ id: 'st' + Date.now() }, objSt));
+        }
+        saveState();
+        renderActiveModule();
+        toast('Personal guardado.', 'green');
+        return;
+      }
+
+      if (type === 'ticket-cfg') {
+        state.receipt.nombreNegocio = document.getElementById('cfg-nom').value.trim();
+        state.receipt.eslogan = document.getElementById('cfg-esl').value.trim();
+        state.receipt.direccion = document.getElementById('cfg-dir').value.trim();
+        state.receipt.telefono = document.getElementById('cfg-tel').value.trim();
+        state.receipt.horario = document.getElementById('cfg-hor').value.trim();
+        state.receipt.anchoPapel = document.getElementById('cfg-anc').value;
+        state.receipt.fontSize = document.getElementById('cfg-fs').value;
+        state.receipt.mensajeFinal = document.getElementById('cfg-msg1').value.trim();
+        state.receipt.notaInferior = document.getElementById('cfg-msg2').value.trim();
+        state.receipt.mostrarLogo = document.getElementById('cfg-show-logo').checked;
+        state.receipt.mostrarHorario = document.getElementById('cfg-show-hor').checked;
+        saveState();
+        renderActiveModule();
+        toast('Configuración de ticket guardada.', 'green');
+        return;
+      }
+
+      if (type === 'user') {
+        var mods = ['ventas'];
+        document.querySelectorAll('input[name="us-mod"]:checked').forEach(function (chk) {
+          if (mods.indexOf(chk.value) === -1) mods.push(chk.value);
+        });
+        var objU = {
+          nombre: document.getElementById('us-nom').value.trim(),
+          username: document.getElementById('us-usr').value.trim(),
+          password: document.getElementById('us-pwd').value.trim(),
+          rol: document.getElementById('us-rol').value,
+          modulos: mods
+        };
+        if (editUserId) {
+          var iu = state.users.findIndex(function (u) { return u.id === editUserId; });
+          if (iu >= 0) state.users[iu] = Object.assign({}, state.users[iu], objU);
+          editUserId = null;
+        } else {
+          state.users.push(Object.assign({ id: 'u' + Date.now() }, objU));
+        }
+        saveState();
+        renderActiveModule();
+        toast('Usuario guardado.', 'green');
+        return;
+      }
+    });
+
+    document.addEventListener('input', function (e) {
+      var id = e.target.id;
+      if (id === 'pos-search-inp') { posSearch = e.target.value; renderActiveModule(); var el = document.getElementById('pos-search-inp'); if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } return; }
+      if (id === 'pos-client-txt') { posClientWalkin = e.target.value; return; }
+      if (id === 'pos-cash-inp') {
+        posCashReceived = e.target.value;
+        var total = posCart.reduce(function (sum, it) { return sum + (it.precio * it.cantidad); }, 0);
+        var ch = (parseFloat(posCashReceived) || 0) - total;
+        var lbl = document.getElementById('pos-change-lbl');
+        if (lbl) {
+          lbl.textContent = (parseFloat(posCashReceived) || 0) > 0 ? rd(Math.max(0, ch)) : 'RD$ 0.00';
+          lbl.className = 'text-sm ' + (ch >= 0 ? 'text-green' : 'text-amber');
+        }
+        return;
+      }
+      if (id === 'cl-search-inp') { clientSearch = e.target.value; renderActiveModule(); var clEl = document.getElementById('cl-search-inp'); if (clEl) { clEl.focus(); clEl.setSelectionRange(clEl.value.length, clEl.value.length); } return; }
+      if (id && id.indexOf('cfg-') === 0) {
+        if (id === 'cfg-nom') state.receipt.nombreNegocio = e.target.value;
+        if (id === 'cfg-esl') state.receipt.eslogan = e.target.value;
+        if (id === 'cfg-dir') state.receipt.direccion = e.target.value;
+        if (id === 'cfg-tel') state.receipt.telefono = e.target.value;
+        if (id === 'cfg-hor') state.receipt.horario = e.target.value;
+        if (id === 'cfg-msg1') state.receipt.mensajeFinal = e.target.value;
+        if (id === 'cfg-msg2') state.receipt.notaInferior = e.target.value;
+        updateCfgLivePreview();
+      }
+    });
+
+    document.addEventListener('change', function (e) {
+      var id = e.target.id;
+      if (id === 'pos-barber') { posBarberId = e.target.value; return; }
+      if (id === 'pos-client-sel') { posClientSel = e.target.value; return; }
+      if (id === 'dash-date-inp') { dashDate = e.target.value || TODAY; renderActiveModule(); return; }
+      if (id === 'rep-from') { repFrom = e.target.value; renderActiveModule(); return; }
+      if (id === 'rep-to') { repTo = e.target.value; renderActiveModule(); return; }
+      if (id === 'rep-pay') { repPay = e.target.value; renderActiveModule(); return; }
+      if (id === 'brep-date') { barbRepDate = e.target.value || TODAY; renderActiveModule(); return; }
+      if (id === 'cie-date') { cierreDate = e.target.value || TODAY; renderActiveModule(); return; }
+      if (id === 'cie-fondo') { fondoInicial = parseFloat(e.target.value) || 0; renderActiveModule(); return; }
+      if (id === 'cfg-anc') { state.receipt.anchoPapel = e.target.value; updateCfgLivePreview(); return; }
+      if (id === 'cfg-fs') { state.receipt.fontSize = e.target.value; updateCfgLivePreview(); return; }
+      if (id === 'cfg-show-logo') { state.receipt.mostrarLogo = e.target.checked; updateCfgLivePreview(); return; }
+      if (id === 'cfg-show-hor') { state.receipt.mostrarHorario = e.target.checked; updateCfgLivePreview(); return; }
+
+      if (id === 'pr-file') {
+        compressImageFile(e.target, function (dataUrl) {
+          tempProdImg = dataUrl;
+          renderActiveModule();
+          toast('Imagen de producto cargada.', 'green');
+        });
+        return;
+      }
+      if (id === 'sv-file') {
+        compressImageFile(e.target, function (dataUrl) {
+          tempServImg = dataUrl;
+          renderActiveModule();
+          toast('Imagen de servicio cargada.', 'green');
+        });
+        return;
+      }
+      if (id === 'cfg-logo-file') {
+        var f = e.target.files && e.target.files[0];
+        if (!f) return;
+        var reader = new FileReader();
+        reader.onload = function (ev) {
+          var img = new Image();
+          img.onload = function () {
+            var c = document.createElement('canvas');
+            c.width = 180;
+            c.height = 180;
+            var ctx = c.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, 180, 180);
+            ctx.drawImage(img, 0, 0, 180, 180);
+            var imgData = ctx.getImageData(0, 0, 180, 180);
+            var d = imgData.data;
+            for (var i = 0; i < d.length; i += 4) {
+              var g = 0.3 * d[i] + 0.59 * d[i + 1] + 0.11 * d[i + 2];
+              var bw = g < 145 ? 0 : 255;
+              d[i] = d[i + 1] = d[i + 2] = bw;
+            }
+            ctx.putImageData(imgData, 0, 0);
+            state.receipt.customLogo = c.toDataURL('image/png');
+            saveState();
+            renderActiveModule();
+            toast('Logotipo térmico actualizado.', 'green');
+          };
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(f);
+        return;
+      }
+      if (id === 'json-import-file') {
+        var jf = e.target.files && e.target.files[0];
+        if (!jf) return;
+        var jr = new FileReader();
+        jr.onload = function (ev) {
+          try {
+            var imported = JSON.parse(ev.target.result);
+            state = Object.assign(defaultState(), imported);
+            saveState();
+            renderActiveModule();
+            toast('Respaldo .JSON restaurado con éxito.', 'green');
+          } catch (err) {
+            toast('Archivo JSON inválido.', 'red');
+          }
+        };
+        jr.readAsText(jf);
+        return;
+      }
+    });
+
+    // =========================================================================
+    // 19. INITIALIZE APPLICATION IMMEDIATELY
+    // =========================================================================
+    document.getElementById('login-emblem').innerHTML = barberLogoSVG('login-lg', false);
+    document.getElementById('sb-logo').innerHTML = barberLogoSVG('sb-lg', false);
+    document.getElementById('today-pill').textContent = TODAY;
+
+    var savedSessionId = safeGet(SESSION_KEY);
+    if (savedSessionId) {
+      var foundUser = state.users.find(function (u) { return u.id === savedSessionId; });
+      if (foundUser) {
+        currentUser = Object.assign({}, foundUser, {
+          modulos: Array.from(new Set(['ventas'].concat(foundUser.modulos || [])))
+        });
+      }
+    }
+
+    syncShellVisibility();
+    startRealtimeCloudSync();
+  </script>
+</body>
+</html>
