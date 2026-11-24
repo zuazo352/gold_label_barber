@@ -2145,7 +2145,31 @@
       var screen = document.getElementById('num-pad-screen');
       if (lbl) lbl.textContent = getFieldLabelText(inputEl);
       if (screen) screen.textContent = inputEl.value || '0';
-      if (pad) pad.style.display = 'block';
+      
+      if (pad && inputEl) {
+        var rect = inputEl.getBoundingClientRect();
+        pad.style.display = 'block';
+        
+        // Posicionarlo a la derecha del input (o flotando justo al lado)
+        var leftPos = rect.right + 12;
+        var topPos = rect.top;
+        
+        // Si se sale de la pantalla por la derecha, colocarlo a la izquierda del input
+        if (leftPos + 290 > window.innerWidth) {
+          leftPos = rect.left - 292;
+        }
+        if (leftPos < 10) leftPos = 10;
+        
+        // Si se sale por abajo, ajustarlo hacia arriba
+        if (topPos + 380 > window.innerHeight) {
+          topPos = window.innerHeight - 390;
+        }
+        if (topPos < 10) topPos = 10;
+
+        pad.style.left = leftPos + 'px';
+        pad.style.bottom = 'auto';
+        pad.style.top = topPos + 'px';
+      }
     }
 
     function hideNumPad() {
