@@ -1,99 +1,20 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GOLD LABEL BARBER (EST. 1963) - Sistema Integral POS &amp; Gestión</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <!-- Firebase SDKs Compat -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
-    <style>
-        :root {
-            --bg: #09090b;
-            --surface: #18181b;
-            --surface-2: #27272a;
-            --input: #09090b;
-            --border: #27272a;
-            --gold: #f59e0b;
-        }
-        body { background-color: var(--bg); color: #f4f4f5; font-family: system-ui, -apple-system, sans-serif; }
-        @media print {
-            body * { visibility: hidden; }
-            #printable-ticket, #printable-ticket * { visibility: visible; }
-            #printable-ticket { position: absolute; left: 0; top: 0; width: 100%; }
-        }
-    </style>
-</head>
-<body class="bg-zinc-950 text-zinc-100 min-h-screen">
-    <div id="app" class="p-4 max-w-7xl mx-auto">
-        <header class="flex flex-col md:flex-row justify-between items-center border-b border-zinc-800 pb-4 mb-6 gap-4">
-            <div>
-                <h1 class="text-2xl font-bold text-amber-400 tracking-wider">GOLD LABEL BARBER</h1>
-                <p class="text-xs text-zinc-400">EST. 1963 • Sistema Profesional Automático</p>
-            </div>
-            <div class="flex items-center gap-4">
-                <div id="cloud-status" class="text-xs px-3 py-1.5 rounded-lg bg-emerald-900/40 text-emerald-300 border border-emerald-600/50 flex items-center gap-2 font-medium">
-                    🟢 Sincronización Automática Activa
-                </div>
-            </div>
-        </header>
+// Configuración de inicialización automática para Gold Label Barber
+const DEFAULT_FB = {
+    apiKey: "AIzaSyAeo_2AhYfLRzUtvqeDMqk6-CAY4e2RS18",
+    authDomain: "gold-label-barber-a5d89.firebaseapp.com",
+    projectId: "gold-label-barber-a5d89",
+    storageBucket: "gold-label-barber-a5d89.firebasestorage.app",
+    messagingSenderId: "752587298181",
+    appId: "1:752587298181:web:be11c8f2dbc56e5015a0ec"
+};
 
-        <main class="space-y-6">
-            <div class="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 shadow-xl">
-                <h2 class="text-lg font-semibold text-amber-400 mb-3">Panel de Operaciones en Tiempo Real</h2>
-                <p class="text-sm text-zinc-400 mb-6">El sistema está conectado a tu base de datos en la nube (`gold-label-barber-a5d89`). Cualquier venta, cambio de inventario o registro de barbero se sincroniza de forma invisible y automática entre tu celular y tu PC.</p>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800">
-                        <span class="text-xs text-zinc-500 block">Estado de Red</span>
-                        <span class="text-sm font-bold text-emerald-400">🟢 Conexión en Vivo</span>
-                    </div>
-                    <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800">
-                        <span class="text-xs text-zinc-500 block">Base de Datos</span>
-                        <span class="text-sm font-bold text-amber-400">Cloud Firestore</span>
-                    </div>
-                    <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-800">
-                        <span class="text-xs text-zinc-500 block">Modo de Operación</span>
-                        <span class="text-sm font-bold text-zinc-200">100% Automático</span>
-                    </div>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <script>
-        // Credenciales oficiales automáticas de gold-label-barber-a5d89
-        const DEFAULT_FB = {
-            apiKey: "AIzaSyAeo_2AhYfLRzUtvqeDMqk6-CAY4e2RS18",
-            authDomain: "gold-label-barber-a5d89.firebaseapp.com",
-            projectId: "gold-label-barber-a5d89",
-            storageBucket: "gold-label-barber-a5d89.firebasestorage.app",
-            messagingSenderId: "752587298181",
-            appId: "1:752587298181:web:be11c8f2dbc56e5015a0ec"
-        };
-
-        let db = null;
-        try {
-            if (!firebase.apps.length) {
-                firebase.initializeApp(DEFAULT_FB);
-            }
-            db = firebase.firestore();
-            console.log("Firebase inicializado automáticamente en background.");
-            
-            // Sincronización en tiempo real automática al cargar la página
-            db.collection("gold_label_barber").doc("main_data").onSnapshot((doc) => {
-                if (doc.exists) {
-                    console.log("Datos sincronizados automáticamente desde la nube:", doc.data());
-                }
-            }, (error) => {
-                console.error("Error en escucha automática:", error);
-            });
-
-        } catch (e) {
-            console.error("Error al inicializar Firebase automáticamente:", e);
-        }
-    </script>
-</body>
-</html>
+let db = null;
+try {
+    if (!firebase.apps.length) {
+        firebase.initializeApp(DEFAULT_FB);
+    }
+    db = firebase.firestore();
+    console.log("Firebase conectado automáticamente.");
+} catch (e) {
+    console.error("Error al conectar Firebase:", e);
+}
