@@ -89,7 +89,7 @@
     .text-red { color: var(--red); }
 
     /* =====================================================================
-       1. LOGIN SCREEN (Dark Glassmorphism - Clean)
+1. LOGIN SCREEN (Dark Glassmorphism - Clean)
        ===================================================================== */
     #login-view {
       min-height: 100vh;
@@ -151,7 +151,7 @@
     .btn-cream-pill:active { transform: scale(0.985); }
 
     /* =====================================================================
-       2. WORKSPACE SHELL & COLLAPSIBLE SIDEBAR WITH EDGE HANDLE TAB
+2. WORKSPACE SHELL & COLLAPSIBLE SIDEBAR WITH EDGE HANDLE TAB
        ===================================================================== */
     #app-shell {
       display: none;
@@ -256,7 +256,7 @@
     }
 
     /* =====================================================================
-       3. CARDS, GRIDS, FORMS, BUTTONS & TABLES
+3. CARDS, GRIDS, FORMS, BUTTONS & TABLES
        ===================================================================== */
     .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
     .card-gold {
@@ -395,7 +395,69 @@
     }
 
     /* =====================================================================
-       4. TOAST NOTIFICATIONS & DIRECT THERMAL PRINT (@media print)
+4. FLOATING NUMERIC TOUCH KEYPAD
+       ===================================================================== */
+    #virtual-num-pad {
+      display: none;
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      background: rgba(20, 24, 34, 0.96);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 2px solid var(--gold);
+      border-radius: 16px;
+      padding: 14px;
+      z-index: 9999;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.9);
+      width: 256px;
+      user-select: none;
+    }
+    .num-pad-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 7px;
+    }
+    .num-key {
+      background: #1a202e;
+      color: #ffffff;
+      border: 1px solid var(--border);
+      padding: 12px 0;
+      font-size: 17px;
+      font-weight: 800;
+      border-radius: 10px;
+      cursor: pointer;
+      text-align: center;
+      transition: background 0.1s, transform 0.08s;
+    }
+    .num-key:hover { border-color: var(--gold); color: var(--gold-hi); }
+    .num-key:active { transform: scale(0.95); background: var(--gold); color: #08090c; }
+    .num-key-fn {
+      background: rgba(239, 68, 68, 0.18);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.42);
+      padding: 12px 0;
+      font-size: 14px;
+      font-weight: 800;
+      border-radius: 10px;
+      cursor: pointer;
+      text-align: center;
+    }
+    .num-key-fn:active { transform: scale(0.95); background: var(--red); color: #fff; }
+    .num-key-ok {
+      grid-column: span 2;
+      background: linear-gradient(135deg, var(--gold-hi) 0%, var(--gold) 55%, var(--gold-lo) 100%);
+      color: #08090c;
+      border: none;
+      padding: 10px 0;
+      font-size: 13.5px;
+      font-weight: 800;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    /* =====================================================================
+5. TOAST NOTIFICATIONS & DIRECT THERMAL PRINT (@media print)
        ===================================================================== */
     #toast-box {
       position: fixed;
@@ -423,7 +485,7 @@
     @media print {
       @page { margin: 0; }
       body { background: #ffffff !important; color: #000000 !important; }
-      #login-view, #app-shell, #toast-box { display: none !important; }
+      #login-view, #app-shell, #toast-box, #virtual-num-pad { display: none !important; }
       #print-area {
         display: block !important;
         width: var(--ticket-w, 80mm) !important;
@@ -443,7 +505,7 @@
 <body>
 
   <!-- =====================================================================
-       1. LOGIN SCREEN (Dark Glassmorphism - Clean, No Demo Hints/Buttons)
+1. LOGIN SCREEN (Dark Glassmorphism - Clean, No Demo Hints/Buttons)
        ===================================================================== -->
   <section id="login-view">
     <div class="login-card">
@@ -467,7 +529,7 @@
   </section>
 
   <!-- =====================================================================
-       2. MAIN WORKSPACE SHELL (Collapsible Sidebar with Left Edge Tab)
+2. MAIN WORKSPACE SHELL (Collapsible Sidebar with Left Edge Tab)
        ===================================================================== -->
   <div id="app-shell">
     <aside id="sidebar">
@@ -518,6 +580,30 @@
       </header>
 
       <main id="main-content" class="p-4 flex-1"></main>
+    </div>
+  </div>
+
+  <!-- Floating Numeric Touch Keypad -->
+  <div id="virtual-num-pad">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <span id="num-pad-label" style="font-size:11.5px; font-weight:800; color:var(--gold); text-transform:uppercase; letter-spacing:0.06em;">Teclado Numérico</span>
+      <button type="button" id="num-pad-close" style="background:rgba(239,68,68,0.22); color:#fca5a5; border:1px solid rgba(239,68,68,0.45); border-radius:7px; width:26px; height:26px; font-weight:800; cursor:pointer;">&#10005;</button>
+    </div>
+    <div class="num-pad-grid">
+      <button type="button" class="num-key" data-val="1">1</button>
+      <button type="button" class="num-key" data-val="2">2</button>
+      <button type="button" class="num-key" data-val="3">3</button>
+      <button type="button" class="num-key" data-val="4">4</button>
+      <button type="button" class="num-key" data-val="5">5</button>
+      <button type="button" class="num-key" data-val="6">6</button>
+      <button type="button" class="num-key" data-val="7">7</button>
+      <button type="button" class="num-key" data-val="8">8</button>
+      <button type="button" class="num-key" data-val="9">9</button>
+      <button type="button" class="num-key" data-val=".">.</button>
+      <button type="button" class="num-key" data-val="0">0</button>
+      <button type="button" id="num-pad-back" class="num-key-fn">&#9003;</button>
+      <button type="button" id="num-pad-clear" class="num-key-fn" style="font-size:12px;">LIMPIAR</button>
+      <button type="button" id="num-pad-done" class="num-key-ok">LISTO &#10003;</button>
     </div>
   </div>
 
@@ -867,6 +953,7 @@
         return;
       }
       activeModule = modId;
+      hideNumPad();
       renderNavMenus(allowed);
       renderActiveModule();
       if (window.innerWidth <= 900 && !sidebarCollapsed) {
@@ -891,6 +978,7 @@
 
     window.logoutUser = function () {
       currentUser = null;
+      hideNumPad();
       safeDel(SESSION_KEY);
       document.getElementById('login-pass').value = '';
       syncShellVisibility();
@@ -1998,12 +2086,90 @@
     }
 
     // =========================================================================
-    // 18. CENTRALIZED DOCUMENT EVENT DELEGATION (CLICK, SUBMIT, INPUT, CHANGE)
+    // 18. FLOATING NUMERIC TOUCH KEYPAD ENGINE
+    // =========================================================================
+    var activeNumberInput = null;
+
+    function getFieldLabelText(el) {
+      var parent = el.parentElement;
+      if (parent) {
+        var lbl = parent.querySelector('label');
+        if (lbl && lbl.textContent) return lbl.textContent.replace('*', '').trim();
+      }
+      return 'Teclado Numérico';
+    }
+
+    function showNumPadFor(inputEl) {
+      activeNumberInput = inputEl;
+      var pad = document.getElementById('virtual-num-pad');
+      var lbl = document.getElementById('num-pad-label');
+      if (lbl) lbl.textContent = getFieldLabelText(inputEl);
+      if (pad) pad.style.display = 'block';
+    }
+
+    function hideNumPad() {
+      var pad = document.getElementById('virtual-num-pad');
+      if (pad) pad.style.display = 'none';
+      activeNumberInput = null;
+    }
+
+    document.addEventListener('focusin', function (e) {
+      var el = e.target;
+      if (!el || el.tagName !== 'INPUT') return;
+      if (el.type === 'number') {
+        showNumPadFor(el);
+      } else if (!el.closest('#virtual-num-pad')) {
+        hideNumPad();
+      }
+    });
+
+    // =========================================================================
+    // 19. CENTRALIZED DOCUMENT EVENT DELEGATION (CLICK, SUBMIT, INPUT, CHANGE)
     // =========================================================================
     document.addEventListener('click', function (e) {
+      // Virtual Numeric Keypad Handlers
+      var numKey = e.target.closest('.num-key');
+      if (numKey) {
+        e.preventDefault();
+        if (!activeNumberInput || !document.body.contains(activeNumberInput)) return;
+        var val = numKey.getAttribute('data-val');
+        var cur = String(activeNumberInput.value || '');
+        if (val === '.' && cur.indexOf('.') !== -1) return;
+        activeNumberInput.value = (val === '.' && cur === '') ? '0.' : (cur + val);
+        activeNumberInput.dispatchEvent(new Event('input', { bubbles: true }));
+        activeNumberInput.dispatchEvent(new Event('change', { bubbles: true }));
+        return;
+      }
+      if (e.target.closest('#num-pad-back')) {
+        e.preventDefault();
+        if (!activeNumberInput || !document.body.contains(activeNumberInput)) return;
+        activeNumberInput.value = String(activeNumberInput.value || '').slice(0, -1);
+        activeNumberInput.dispatchEvent(new Event('input', { bubbles: true }));
+        activeNumberInput.dispatchEvent(new Event('change', { bubbles: true }));
+        return;
+      }
+      if (e.target.closest('#num-pad-clear')) {
+        e.preventDefault();
+        if (!activeNumberInput || !document.body.contains(activeNumberInput)) return;
+        activeNumberInput.value = '';
+        activeNumberInput.dispatchEvent(new Event('input', { bubbles: true }));
+        activeNumberInput.dispatchEvent(new Event('change', { bubbles: true }));
+        return;
+      }
+      if (e.target.closest('#num-pad-close') || e.target.closest('#num-pad-done')) {
+        e.preventDefault();
+        hideNumPad();
+        return;
+      }
+
+      if (activeNumberInput && !e.target.closest('#virtual-num-pad') && e.target !== activeNumberInput) {
+        hideNumPad();
+      }
+
       var navEl = e.target.closest('[data-nav]');
       if (navEl) {
         e.preventDefault();
+        hideNumPad();
         window.navigateTo(navEl.getAttribute('data-nav'));
         return;
       }
@@ -2014,7 +2180,7 @@
       var id = actEl.getAttribute('data-id');
 
       if (act === 'toggle-sidebar') { window.toggleSidebar(); return; }
-      if (act === 'logout') { window.logoutUser(); return; }
+      if (act === 'logout') { hideNumPad(); window.logoutUser(); return; }
 
       // POS Actions
       if (act === 'pos-tab') { posTab = actEl.getAttribute('data-tab'); renderActiveModule(); return; }
@@ -2064,6 +2230,7 @@
       }
       if (act === 'pos-checkout') {
         if (posCart.length === 0) { toast('Agrega al menos un servicio o producto.', 'amber'); return; }
+        hideNumPad();
         var bSel = document.getElementById('pos-barber');
         var bObj = state.barbers.find(function (b) { return b.id === (bSel ? bSel.value : posBarberId); });
         var cWalk = (document.getElementById('pos-client-txt') ? document.getElementById('pos-client-txt').value.trim() : '');
@@ -2237,6 +2404,7 @@
       var type = form.getAttribute('data-form');
       if (!type) return;
       e.preventDefault();
+      hideNumPad();
 
       if (type === 'login') {
         var uVal = document.getElementById('login-user').value.trim().toLowerCase();
@@ -2571,7 +2739,7 @@
     });
 
     // =========================================================================
-    // 19. INITIALIZE APPLICATION IMMEDIATELY
+    // 20. INITIALIZE APPLICATION IMMEDIATELY
     // =========================================================================
     document.getElementById('login-emblem').innerHTML = barberLogoSVG('login-lg', false);
     document.getElementById('sb-logo').innerHTML = barberLogoSVG('sb-lg', false);
