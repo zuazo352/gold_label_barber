@@ -2548,6 +2548,34 @@
     }
 
     syncShellVisibility();
+    // Sincronización automática en segundo plano - gold-label-barber-a5d89
+    const DEFAULT_FB = {
+        apiKey: "AIzaSyAeo_2AhYfLRzUtvqeDMqk6-CAY4e2RS18",
+        authDomain: "gold-label-barber-a5d89.firebaseapp.com",
+        projectId: "gold-label-barber-a5d89",
+        storageBucket: "gold-label-barber-a5d89.firebasestorage.app",
+        messagingSenderId: "752587298181",
+        appId: "1:752587298181:web:be11c8f2dbc56e5015a0ec"
+    };
+
+    let db = null;
+    try {
+        if (!firebase.apps.length) {
+            firebase.initializeApp(DEFAULT_FB);
+        }
+        db = firebase.firestore();
+        console.log("Firebase conectado automáticamente en segundo plano.");
+
+        db.collection("gold_label_barber").doc("main_data").onSnapshot((doc) => {
+            if (doc.exists) {
+                console.log("Datos sincronizados automáticamente:", doc.data());
+            }
+        }, (err) => {
+            console.error("Error en sincronización automática:", err);
+        });
+    } catch (e) {
+        console.error("Error al inicializar Firebase:", e);
+    }
   </script>
 </body>
 </html>
