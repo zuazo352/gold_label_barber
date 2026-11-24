@@ -89,7 +89,7 @@
     .text-red { color: var(--red); }
 
     /* =====================================================================
-1. LOGIN SCREEN (Dark Glassmorphism - Clean)
+       1. LOGIN SCREEN (Dark Glassmorphism - Clean)
        ===================================================================== */
     #login-view {
       min-height: 100vh;
@@ -151,7 +151,7 @@
     .btn-cream-pill:active { transform: scale(0.985); }
 
     /* =====================================================================
-2. WORKSPACE SHELL & COLLAPSIBLE SIDEBAR WITH EDGE HANDLE TAB
+       2. WORKSPACE SHELL & COLLAPSIBLE SIDEBAR WITH EDGE HANDLE TAB
        ===================================================================== */
     #app-shell {
       display: none;
@@ -256,7 +256,7 @@
     }
 
     /* =====================================================================
-3. CARDS, GRIDS, FORMS, BUTTONS & TABLES
+       3. CARDS, GRIDS, FORMS, BUTTONS & TABLES
        ===================================================================== */
     .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
     .card-gold {
@@ -395,69 +395,104 @@
     }
 
     /* =====================================================================
-4. FLOATING NUMERIC TOUCH KEYPAD
+       4. FLOATING CIRCULAR TOUCH KEYPAD (GOLD STYLE)
        ===================================================================== */
     #virtual-num-pad {
       display: none;
       position: fixed;
-      bottom: 20px;
-      left: 20px;
-      background: rgba(20, 24, 34, 0.96);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      bottom: 24px;
+      left: 24px;
+      background: rgba(12, 14, 20, 0.96);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       border: 2px solid var(--gold);
-      border-radius: 16px;
-      padding: 14px;
+      border-radius: 22px;
+      padding: 16px;
       z-index: 9999;
-      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.9);
-      width: 256px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(212, 175, 55, 0.35);
+      width: 280px;
       user-select: none;
+    }
+    .num-pad-screen {
+      background: #06080b;
+      border: 1.5px solid rgba(212, 175, 55, 0.6);
+      border-radius: 12px;
+      padding: 10px 14px;
+      margin-bottom: 14px;
+      text-align: right;
+      color: var(--gold-hi);
+      font-family: 'Courier New', monospace;
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      overflow: hidden;
+      box-shadow: inset 0 3px 8px rgba(0,0,0,0.9);
     }
     .num-pad-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 7px;
+      gap: 12px;
+      justify-items: center;
     }
     .num-key {
-      background: #1a202e;
+      width: 60px;
+      height: 60px;
+      background: radial-gradient(circle, #222736 0%, #11141d 100%);
       color: #ffffff;
-      border: 1px solid var(--border);
-      padding: 12px 0;
-      font-size: 17px;
+      border: 1.5px solid rgba(212, 175, 55, 0.35);
+      font-size: 20px;
       font-weight: 800;
-      border-radius: 10px;
+      border-radius: 50%;
       cursor: pointer;
-      text-align: center;
-      transition: background 0.1s, transform 0.08s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+      transition: all 0.1s ease;
     }
-    .num-key:hover { border-color: var(--gold); color: var(--gold-hi); }
-    .num-key:active { transform: scale(0.95); background: var(--gold); color: #08090c; }
+    .num-key:hover { border-color: var(--gold); background: radial-gradient(circle, #323b52 0%, #1a202e 100%); color: var(--gold-hi); transform: translateY(-2px); }
+    .num-key:active { transform: scale(0.92); background: var(--gold); color: #08090c; }
     .num-key-fn {
-      background: rgba(239, 68, 68, 0.18);
-      color: #fca5a5;
-      border: 1px solid rgba(239, 68, 68, 0.42);
-      padding: 12px 0;
-      font-size: 14px;
+      width: 60px;
+      height: 60px;
+      background: rgba(212, 175, 55, 0.14);
+      color: var(--gold-hi);
+      border: 1.5px solid rgba(212, 175, 55, 0.45);
+      font-size: 18px;
       font-weight: 800;
-      border-radius: 10px;
+      border-radius: 50%;
       cursor: pointer;
-      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+      transition: all 0.1s ease;
     }
-    .num-key-fn:active { transform: scale(0.95); background: var(--red); color: #fff; }
+    .num-key-fn:active { transform: scale(0.92); background: var(--gold); color: #08090c; }
     .num-key-ok {
-      grid-column: span 2;
+      width: 60px;
+      height: 60px;
       background: linear-gradient(135deg, var(--gold-hi) 0%, var(--gold) 55%, var(--gold-lo) 100%);
       color: #08090c;
       border: none;
-      padding: 10px 0;
-      font-size: 13.5px;
-      font-weight: 800;
-      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 900;
+      border-radius: 50%;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 6px 22px rgba(212, 175, 55, 0.45);
+      transition: all 0.1s ease;
     }
+    .num-key-ok:active { transform: scale(0.92); filter: brightness(1.15); }
 
     /* =====================================================================
-5. TOAST NOTIFICATIONS & DIRECT THERMAL PRINT (@media print)
+       5. TOAST NOTIFICATIONS & DIRECT THERMAL PRINT (@media print)
        ===================================================================== */
     #toast-box {
       position: fixed;
@@ -505,7 +540,7 @@
 <body>
 
   <!-- =====================================================================
-1. LOGIN SCREEN (Dark Glassmorphism - Clean, No Demo Hints/Buttons)
+       1. LOGIN SCREEN (Dark Glassmorphism - Clean, No Demo Hints/Buttons)
        ===================================================================== -->
   <section id="login-view">
     <div class="login-card">
@@ -529,7 +564,7 @@
   </section>
 
   <!-- =====================================================================
-2. MAIN WORKSPACE SHELL (Collapsible Sidebar with Left Edge Tab)
+       2. MAIN WORKSPACE SHELL (Collapsible Sidebar with Left Edge Tab)
        ===================================================================== -->
   <div id="app-shell">
     <aside id="sidebar">
@@ -583,12 +618,13 @@
     </div>
   </div>
 
-  <!-- Floating Numeric Touch Keypad -->
+  <!-- Floating Circular Gold Numeric Keypad -->
   <div id="virtual-num-pad">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-      <span id="num-pad-label" style="font-size:11.5px; font-weight:800; color:var(--gold); text-transform:uppercase; letter-spacing:0.06em;">Teclado Numérico</span>
-      <button type="button" id="num-pad-close" style="background:rgba(239,68,68,0.22); color:#fca5a5; border:1px solid rgba(239,68,68,0.45); border-radius:7px; width:26px; height:26px; font-weight:800; cursor:pointer;">&#10005;</button>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+      <span id="num-pad-label" style="font-size:10.5px; font-weight:800; color:var(--gold); text-transform:uppercase; letter-spacing:0.08em;">Teclado Numérico</span>
+      <button type="button" id="num-pad-close" style="background:rgba(239,68,68,0.22); color:#fca5a5; border:1px solid rgba(239,68,68,0.45); border-radius:6px; width:22px; height:22px; font-weight:800; cursor:pointer; font-size:11px;">&#10005;</button>
     </div>
+    <div id="num-pad-screen" class="num-pad-screen">0.00</div>
     <div class="num-pad-grid">
       <button type="button" class="num-key" data-val="1">1</button>
       <button type="button" class="num-key" data-val="2">2</button>
@@ -599,11 +635,11 @@
       <button type="button" class="num-key" data-val="7">7</button>
       <button type="button" class="num-key" data-val="8">8</button>
       <button type="button" class="num-key" data-val="9">9</button>
-      <button type="button" class="num-key" data-val=".">.</button>
+      <button type="button" class="num-key-fn" data-val="back">&#9003;</button>
       <button type="button" class="num-key" data-val="0">0</button>
-      <button type="button" id="num-pad-back" class="num-key-fn">&#9003;</button>
-      <button type="button" id="num-pad-clear" class="num-key-fn" style="font-size:12px;">LIMPIAR</button>
-      <button type="button" id="num-pad-done" class="num-key-ok">LISTO &#10003;</button>
+      <button type="button" class="num-key" data-val=".">.</button>
+      <button type="button" class="num-key-fn" data-val="clear" style="font-size:11px; font-weight:900;">C</button>
+      <button type="button" class="num-key-ok" data-val="ok" style="grid-column: span 2; width: 100%; border-radius: 30px;">OK</button>
     </div>
   </div>
 
@@ -820,6 +856,9 @@
         state = Object.assign(defaultState(), parsed);
         state.receipt = Object.assign(defaultState().receipt, parsed.receipt || {});
         state.cloud = Object.assign(defaultState().cloud, parsed.cloud || {});
+        if (!Array.isArray(state.users) || state.users.length === 0) {
+          state.users = defaultState().users;
+        }
       }
     } catch (e) {
       state = defaultState();
@@ -1159,7 +1198,7 @@
 
           '<div class="pt-3" style="border-top:1px solid var(--border);">' +
             (posPayMethod === 'Efectivo' ? '<div class="grid grid-2 gap-2 mb-2">' +
-              '<div><label class="lbl">Efectivo Recibido RD$</label><input type="number" step="0.01" id="pos-cash-inp" value="' + esc(posCashReceived) + '" placeholder="0.00" /></div>' +
+              '<div><label class="lbl">Efectivo Recibido RD$</label><input type="number" step="0.01" id="pos-cash-inp" data-numpad="Efectivo Recibido RD$" value="' + esc(posCashReceived) + '" placeholder="0.00" /></div>' +
               '<div class="subcard flex flex-col justify-center"><span class="text-xs text-muted">Devuelta / Cambio</span><b id="pos-change-lbl" class="text-sm ' + (changeVal >= 0 ? 'text-green' : 'text-amber') + '">' + (cashVal > 0 ? rd(Math.max(0, changeVal)) : 'RD$ 0.00') + '</b></div>' +
             '</div>' : '') +
             '<div class="flex justify-between items-center mb-3"><span class="text-sm font-bold text-muted">TOTAL A COBRAR</span><span class="text-xl font-extrabold text-gold-hi">' + rd(total) + '</span></div>' +
@@ -1328,9 +1367,9 @@
                 }).join('') +
               '</select></div>' +
               '<div class="grid grid-3 gap-2">' +
-                '<div><label class="lbl">Costo RD$</label><input type="number" step="0.01" id="pr-cos" required value="' + (edProd ? edProd.costo : 250) + '" /></div>' +
-                '<div><label class="lbl">Precio RD$</label><input type="number" step="0.01" id="pr-pre" required value="' + (edProd ? edProd.precio : 650) + '" /></div>' +
-                '<div><label class="lbl">Stock</label><input type="number" id="pr-stk" required value="' + (edProd ? edProd.stock : 10) + '" /></div>' +
+                '<div><label class="lbl">Costo RD$</label><input type="number" step="0.01" id="pr-cos" data-numpad="Costo RD$" required value="' + (edProd ? edProd.costo : 250) + '" /></div>' +
+                '<div><label class="lbl">Precio RD$</label><input type="number" step="0.01" id="pr-pre" data-numpad="Precio Venta RD$" required value="' + (edProd ? edProd.precio : 650) + '" /></div>' +
+                '<div><label class="lbl">Stock</label><input type="number" id="pr-stk" data-numpad="Stock Inicial" required value="' + (edProd ? edProd.stock : 10) + '" /></div>' +
               '</div>' +
               '<div class="subcard">' +
                 '<label class="lbl">Imagen del Producto</label>' +
@@ -1359,7 +1398,7 @@
                     '<button type="button" data-action="prod-stock" data-id="' + p.id + '" data-delta="-5" class="btn btn-red btn-xs">-5</button>' +
                     '<button type="button" data-action="prod-stock" data-id="' + p.id + '" data-delta="5" class="btn btn-green btn-xs">+5</button>' +
                     '<button type="button" data-action="prod-stock" data-id="' + p.id + '" data-delta="10" class="btn btn-green btn-xs">+10</button>' +
-                    '<input type="number" id="batch-inp-' + p.id + '" value="15" style="width:60px;padding:3px 6px;font-size:11px;" />' +
+                    '<input type="number" id="batch-inp-' + p.id + '" data-numpad="Cantidad Lote" value="15" style="width:60px;padding:3px 6px;font-size:11px;" />' +
                     '<button type="button" data-action="prod-batch-apply" data-id="' + p.id + '" class="btn btn-gold btn-xs">Aplicar</button>' +
                   '</div>'
                 : '';
@@ -1396,8 +1435,8 @@
           '<form data-form="service" class="flex flex-col gap-2">' +
             '<div><label class="lbl">Nombre del Servicio *</label><input type="text" id="sv-nom" required value="' + esc(ed ? ed.nombre : '') + '" /></div>' +
             '<div class="grid grid-2 gap-2">' +
-              '<div><label class="lbl">Duración (min) *</label><input type="number" id="sv-dur" required value="' + (ed ? ed.duracion : 30) + '" /></div>' +
-              '<div><label class="lbl">Precio RD$ *</label><input type="number" step="0.01" id="sv-pre" required value="' + (ed ? ed.precio : 500) + '" /></div>' +
+              '<div><label class="lbl">Duración (min) *</label><input type="number" id="sv-dur" data-numpad="Duración (min)" required value="' + (ed ? ed.duracion : 30) + '" /></div>' +
+              '<div><label class="lbl">Precio RD$ *</label><input type="number" step="0.01" id="sv-pre" data-numpad="Precio Servicio RD$" required value="' + (ed ? ed.precio : 500) + '" /></div>' +
             '</div>' +
             '<div><label class="lbl">Descripción</label><input type="text" id="sv-des" value="' + esc(ed ? (ed.descripcion || '') : '') + '" placeholder="Detalles del servicio..." /></div>' +
             '<div class="subcard">' +
@@ -1509,7 +1548,7 @@
                 '<div><label class="lbl">Teléfono</label><input type="text" id="br-tel" value="' + esc(ed ? ed.telefono : '') + '" /></div>' +
               '</div>' +
               '<div class="grid grid-2 gap-2">' +
-                '<div><label class="lbl">Comisión % *</label><input type="number" min="0" max="100" id="br-com" required value="' + (ed ? ed.comision : 50) + '" /></div>' +
+                '<div><label class="lbl">Comisión % *</label><input type="number" min="0" max="100" id="br-com" data-numpad="Comisión %" required value="' + (ed ? ed.comision : 50) + '" /></div>' +
                 '<div><label class="lbl">Estado</label><select id="br-act"><option value="1" ' + (!ed || ed.activo !== false ? 'selected' : '') + '>Activo</option><option value="0" ' + (ed && ed.activo === false ? 'selected' : '') + '>Inactivo</option></select></div>' +
               '</div>' +
               '<div class="flex gap-2 mt-1"><button type="submit" class="btn btn-gold flex-1">Guardar Barbero</button>' +
@@ -1548,7 +1587,7 @@
                 }).join('') +
               '</select></div>' +
               '<div class="grid grid-2 gap-2">' +
-                '<div><label class="lbl">Monto RD$ *</label><input type="number" step="0.01" min="1" id="ad-monto" required placeholder="500.00" /></div>' +
+                '<div><label class="lbl">Monto RD$ *</label><input type="number" step="0.01" min="1" id="ad-monto" data-numpad="Monto Adelanto RD$" required placeholder="500.00" /></div>' +
                 '<div><label class="lbl">Fecha *</label><input type="date" id="ad-fecha" required value="' + TODAY + '" /></div>' +
               '</div>' +
               '<div><label class="lbl">Concepto / Nota *</label><input type="text" id="ad-motivo" required value="Adelanto de sueldo / comisión" /></div>' +
@@ -1646,7 +1685,7 @@
             '</div>' +
             '<div class="grid grid-2 gap-2">' +
               '<div><label class="lbl">Teléfono</label><input type="text" id="st-tel" value="' + esc(ed ? ed.telefono : '') + '" /></div>' +
-              '<div><label class="lbl">Sueldo Base RD$</label><input type="number" step="0.01" id="st-sue" value="' + (ed ? ed.sueldo : 20000) + '" /></div>' +
+              '<div><label class="lbl">Sueldo Base RD$</label><input type="number" step="0.01" id="st-sue" data-numpad="Sueldo Base RD$" value="' + (ed ? ed.sueldo : 20000) + '" /></div>' +
             '</div>' +
             '<div class="grid grid-2 gap-2">' +
               '<div><label class="lbl">Horario</label><input type="text" id="st-hor" value="' + esc(ed ? ed.horario : 'Lun-Sáb 9am-6pm') + '" /></div>' +
@@ -1698,7 +1737,7 @@
         '<div class="card flex justify-between items-end flex-wrap gap-3">' +
           '<div class="flex gap-3 flex-wrap">' +
             '<div><label class="lbl">Fecha de Cierre</label><input type="date" id="cie-date" value="' + cierreDate + '" style="width:165px;" /></div>' +
-            '<div><label class="lbl">Fondo Inicial RD$</label><input type="number" step="0.01" id="cie-fondo" value="' + fondoInicial + '" style="width:165px;" /></div>' +
+            '<div><label class="lbl">Fondo Inicial RD$</label><input type="number" step="0.01" id="cie-fondo" data-numpad="Fondo Inicial RD$" value="' + fondoInicial + '" style="width:165px;" /></div>' +
           '</div>' +
           '<button type="button" data-action="cierre-close-print" class="btn btn-gold">Cerrar Caja e Imprimir Ticket 80mm</button>' +
         '</div>' +
@@ -2103,7 +2142,9 @@
       activeNumberInput = inputEl;
       var pad = document.getElementById('virtual-num-pad');
       var lbl = document.getElementById('num-pad-label');
+      var screen = document.getElementById('num-pad-screen');
       if (lbl) lbl.textContent = getFieldLabelText(inputEl);
+      if (screen) screen.textContent = inputEl.value || '0';
       if (pad) pad.style.display = 'block';
     }
 
@@ -2116,7 +2157,7 @@
     document.addEventListener('focusin', function (e) {
       var el = e.target;
       if (!el || el.tagName !== 'INPUT') return;
-      if (el.type === 'number') {
+      if (el.type === 'number' || el.id === 'pos-cash-inp' || el.hasAttribute('data-numpad')) {
         showNumPadFor(el);
       } else if (!el.closest('#virtual-num-pad')) {
         hideNumPad();
@@ -2127,36 +2168,37 @@
     // 19. CENTRALIZED DOCUMENT EVENT DELEGATION (CLICK, SUBMIT, INPUT, CHANGE)
     // =========================================================================
     document.addEventListener('click', function (e) {
-      // Virtual Numeric Keypad Handlers
-      var numKey = e.target.closest('.num-key');
-      if (numKey) {
+      // Virtual Circular Gold Numeric Keypad Handlers
+      var numKey = e.target.closest('[data-val]');
+      if (numKey && numKey.closest('#virtual-num-pad')) {
         e.preventDefault();
         if (!activeNumberInput || !document.body.contains(activeNumberInput)) return;
         var val = numKey.getAttribute('data-val');
+        var screen = document.getElementById('num-pad-screen');
         var cur = String(activeNumberInput.value || '');
-        if (val === '.' && cur.indexOf('.') !== -1) return;
-        activeNumberInput.value = (val === '.' && cur === '') ? '0.' : (cur + val);
+
+        if (val === 'ok') {
+          hideNumPad();
+          return;
+        }
+        if (val === 'clear') {
+          activeNumberInput.value = '';
+          if (screen) screen.textContent = '0';
+        } else if (val === 'back') {
+          activeNumberInput.value = cur.slice(0, -1);
+          if (screen) screen.textContent = activeNumberInput.value || '0';
+        } else {
+          if (val === '.' && cur.indexOf('.') !== -1) return;
+          activeNumberInput.value = (val === '.' && (cur === '' || cur === '0')) ? '0.' : (cur === '0' && val !== '.' ? val : cur + val);
+          if (screen) screen.textContent = activeNumberInput.value;
+        }
+
         activeNumberInput.dispatchEvent(new Event('input', { bubbles: true }));
         activeNumberInput.dispatchEvent(new Event('change', { bubbles: true }));
         return;
       }
-      if (e.target.closest('#num-pad-back')) {
-        e.preventDefault();
-        if (!activeNumberInput || !document.body.contains(activeNumberInput)) return;
-        activeNumberInput.value = String(activeNumberInput.value || '').slice(0, -1);
-        activeNumberInput.dispatchEvent(new Event('input', { bubbles: true }));
-        activeNumberInput.dispatchEvent(new Event('change', { bubbles: true }));
-        return;
-      }
-      if (e.target.closest('#num-pad-clear')) {
-        e.preventDefault();
-        if (!activeNumberInput || !document.body.contains(activeNumberInput)) return;
-        activeNumberInput.value = '';
-        activeNumberInput.dispatchEvent(new Event('input', { bubbles: true }));
-        activeNumberInput.dispatchEvent(new Event('change', { bubbles: true }));
-        return;
-      }
-      if (e.target.closest('#num-pad-close') || e.target.closest('#num-pad-done')) {
+
+      if (e.target.closest('#num-pad-close')) {
         e.preventDefault();
         hideNumPad();
         return;
@@ -2628,6 +2670,10 @@
 
     document.addEventListener('input', function (e) {
       var id = e.target.id;
+      if (activeNumberInput && activeNumberInput === e.target) {
+        var screen = document.getElementById('num-pad-screen');
+        if (screen) screen.textContent = e.target.value || '0';
+      }
       if (id === 'pos-search-inp') { posSearch = e.target.value; renderActiveModule(); var el = document.getElementById('pos-search-inp'); if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } return; }
       if (id === 'pos-client-txt') { posClientWalkin = e.target.value; return; }
       if (id === 'pos-cash-inp') {
